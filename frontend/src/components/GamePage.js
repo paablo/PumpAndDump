@@ -6,26 +6,48 @@ const GamePage = ({ socket, name, room, setLoggedIn }) => {
   const [start, setStart] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
   const [updates, setUpdates] = useState([]);
+  const [roundNumber, setRoundNumber] = useState(1); // Add state for round number
 
+  // FIX: useEffect (was useState) to attach socket listeners for player count and start
+  useEffect(() => {
+    if (!socket || !socket.current) return;
 
-  useState(() => {
-    socket.current.on("player_count", (count) => {
+    const sc = socket.current;
+    sc.on("player_count", (count) => {
       setPlayerCount(count);
     });
-    socket.current.on("start_game", () => {
+    sc.on("start_game", () => {
       setStart(true);
     });
-  }, [socket.current]);
+
+    return () => {
+      sc.off("player_count");
+      sc.off("start_game");
+    };
+  }, [socket]);
 
   useEffect(() => {
-    socket.current.on("update", (msg) => {
+    if (!socket || !socket.current) return;
+
+    const sc = socket.current;
+    sc.on("update", (msg) => {
       setUpdates((updates) => [...updates, msg]);
     });
-  }, [socket.current]);
+    sc.on("round_update", (round) => {
+      setRoundNumber(round); // Update round number when received from server
+      console.log(round);
+    });
+
+    return () => {
+      sc.off("update");
+      sc.off("round_update");
+    };
+  }, [socket]);
 
   const startGame = () => {
     if (playerCount < 2) {
-      window.alert("you need at least 2 players to start the game");
+      // use browser alert instead of snackbar
+      alert("You need at least 2 players to start the game");
       return null;
     }
     socket.current.emit("start_game", room);
@@ -38,44 +60,51 @@ const GamePage = ({ socket, name, room, setLoggedIn }) => {
   };
 
   return (
-    <div className="gamepage">
+    <div className="gamepage" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "10px", boxSizing: "border-box" }}>
       {start ? (
         <Game
           room={room}
           socket={socket}
           name={name}
           setLoggedIn={setLoggedIn}
+          roundNumber={roundNumber}
         />
       ) : (
-        <div className="flex-centered">
-          <div className="login flex-centered-column">
-            <h2>
+        <div className="flex-centered" style={{ width: "100%", maxWidth: "600px" }}>
+          <div className="login flex-centered-column" style={{ width: "100%" }}>
+            <h2 style={{ textAlign: "center" }}>
               You have joined room <span style={{ color: "blue" }}>{room}</span>{" "}
             </h2>
-            <h2>there are currently {playerCount} player(s) in this room</h2>
-            <h1>Start the game?</h1>
-            <div className="actions">
+            <h2 style={{ textAlign: "center" }}>there are currently {playerCount} player(s) in this room</h2>
+            <h1 style={{ textAlign: "center" }}>Start the game?</h1>
+            <div className="actions" style={{ display: "flex", justifyContent: "space-around", width: "100%" }}>
               <div className="button">
                 <Button
                   color="primary"
                   variant="contained"
                   onClick={startGame}
                   className="abutton"
+                  style={{ width: "100%" }}
                 >
                   {" "}
                   start{" "}
                 </Button>
               </div>
               <div className="button">
-                <Button color="primary" variant="contained" onClick={leaveRoom}>
+                <Button
+                  color="primary"
+                  variant="contained"
+                  onClick={leaveRoom}
+                  style={{ width: "100%" }}
+                >
                   {" "}
                   Leave room{" "}
                 </Button>
               </div>
             </div>
           </div>
-          <div className="updates">
-            <ul>
+          <div className="updates" style={{ marginTop: "20px", width: "100%" }}>
+            <ul style={{ padding: "0", listStyleType: "none", textAlign: "center" }}>
               {updates.map((update, index) => (
                 <li key={index}>{update}</li>
               ))}

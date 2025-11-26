@@ -22,7 +22,7 @@ const LoginPage = ({ socket, setLoggedIn, name, setName, room, setRoom }) => {
     return (
         <div className="flex-centered" style={{flexWrap: 'wrap'}}>
             <div className="login flex-centered-column">
-                <h1>Castelino's Card Game</h1>
+                <h1>Pump & Dump</h1>
                 <TextField
                     value={name}
                     onChange={nameChangeHandler}

@@ -1,10 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Button } from "@material-ui/core";
+import { Button, Snackbar } from "@material-ui/core";
 import { grey } from "@material-ui/core/colors";
 
 import ProfileCircle from "./ProfileCircle";
+import Card from "./CardModel";
+import CardView from "./CardView";
+import RoundInfo from "./RoundInfo";
+import Shares from "./Shares";
+import Board from "./Board";
+import PlayerHand from "./PlayerHand";
+import Updates from "./Updates";
 
-const Game = ({ socket, name, room, setLoggedIn }) => {
+const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
   const [updates, setUpdates] = useState([]);
   const [myTurn, setMyTurn] = useState(false);
   const [sendCard, setSendCard] = useState(-1);
@@ -22,77 +29,27 @@ const Game = ({ socket, name, room, setLoggedIn }) => {
     "#ff5555",
   ]);
 
-  class Card {
-    constructor(card) {
-      this.card = card;
-      const cardValues = {
-        "Ace of Hearts": 1,
-        "2 of Hearts": 2,
-        "3 of Hearts": 3,
-        "4 of Hearts": 4,
-        "5 of Hearts": 5,
-        "6 of Hearts": 6,
-        "7 of Hearts": 7,
-        "8 of Hearts": 8,
-        "9 of Hearts": 9,
-        "10 of Hearts": 10,
-        "Jack of Hearts": 11,
-        "Queen of Hearts": 12,
-        "King of Hearts": 13,
-        "Ace of Diamonds": 1,
-        "2 of Diamonds": 2,
-        "3 of Diamonds": 3,
-        "4 of Diamonds": 4,
-        "5 of Diamonds": 5,
-        "6 of Diamonds": 6,
-        "7 of Diamonds": 7,
-        "8 of Diamonds": 8,
-        "9 of Diamonds": 9,
-        "10 of Diamonds": 10,
-        "Jack of Diamonds": 11,
-        "Queen of Diamonds": 12,
-        "King of Diamonds": 13,
-        "Ace of Clubs": 1,
-        "2 of Clubs": 2,
-        "3 of Clubs": 3,
-        "4 of Clubs": 4,
-        "5 of Clubs": 5,
-        "6 of Clubs": 6,
-        "7 of Clubs": 7,
-        "8 of Clubs": 8,
-        "9 of Clubs": 9,
-        "10 of Clubs": 10,
-        "Jack of Clubs": 11,
-        "Queen of Clubs": 12,
-        "King of Clubs": 13,
-        "Ace of Spades": 1,
-        "2 of Spades": 2,
-        "3 of Spades": 3,
-        "4 of Spades": 4,
-        "5 of Spades": 5,
-        "6 of Spades": 6,
-        "7 of Spades": 7,
-        "8 of Spades": 8,
-        "9 of Spades": 9,
-        "10 of Spades": 10,
-        "Jack of Spades": 11,
-        "Queen of Spades": 12,
-        "King of Spades": 13,
-      };
+  // Add snackbar state for modern non-blocking messages and a pendingAction to emulate blocking alerts when needed
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const [pendingAction, setPendingAction] = useState(null);
 
-      this.value = cardValues[card];
-      this.suit = card.substring(card.indexOf(" of ") + 4);
-      this.placeHolder = null;
-      this.flipped = false;
+  const showMessage = (message, action = null) => {
+    setSnackbar({ open: true, message });
+    setPendingAction(() => action);
+  };
 
-      var suits = { Hearts: 0, Diamonds: 13, Clubs: 26, Spades: 39 };
-      this.position = suits[this.suit] + this.value; //Position in a sorted deck
-      this.backgroundPosition = -100 * this.position + "px";
-    } //End of Constructor
-  } //End of Card class
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === "clickaway") return;
+    setSnackbar({ open: false, message: "" });
+    if (typeof pendingAction === "function") {
+      // call and clear
+      pendingAction();
+      setPendingAction(null);
+    }
+  };
 
   // Set card size limit to prevent overscaling
-  const styleCardSize = { maxHeight: '150px', maxWidth: '105px' }
+  const styleCardSize = { maxHeight: "150px", maxWidth: "105px" };
 
   const [opencard, setOpencard] = useState();
   const [playerCards, setPlayerCards] = useState([]);
@@ -100,6 +57,78 @@ const Game = ({ socket, name, room, setLoggedIn }) => {
 
   const nextButton = useRef(null);
   const throwing = useRef(null);
+
+  // Add responsive styles
+  const responsiveStyles = {
+    game: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      padding: "10px",
+    },
+    roundInfo: {
+      marginBottom: "10px",
+      textAlign: "center",
+    },
+    players: {
+      display: "flex",
+      justifyContent: "center",
+      flexWrap: "wrap",
+      marginBottom: "20px",
+    },
+    board: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      marginBottom: "20px",
+    },
+    shares: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      marginBottom: "16px",
+      width: "100%",
+    },
+    cards: {
+      display: "flex",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      gap: "10px",
+    },
+    updates: {
+      marginTop: "20px",
+      width: "100%",
+      maxWidth: "400px",
+      textAlign: "center",
+    },
+  };
+
+  // Add overlay and snackbar-specific styles
+  const overlayStyle = {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.25)",
+    backdropFilter: "blur(6px)",
+    WebkitBackdropFilter: "blur(6px)",
+    zIndex: 1400, // below snackbar
+  };
+
+  const snackbarContentStyle = {
+    padding: "18px 28px",
+    minWidth: "420px",
+    maxWidth: "90vw",
+    borderRadius: 8,
+    boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+  };
+
+  const snackbarMessageStyle = {
+    fontSize: "1.15rem",
+    lineHeight: 1.2,
+    textAlign: "center",
+    color: "#fff",
+    width: "100%",
+    display: "block",
+  };
 
   useEffect(() => {
     // Starting values of opnecard, player cards and player names
@@ -120,7 +149,14 @@ const Game = ({ socket, name, room, setLoggedIn }) => {
 
     // Updates after any move
     socket.current.on("update", ({ name, send, length }) => {
-      setUpdates((updates) => [...updates, `${name} threw ${send}(${length})`]);
+      // Format send (accept string or server-side object)
+      const sendStr =
+        typeof send === "string"
+          ? send
+          : send && send.value && send.suit
+          ? `${send.value} of ${send.suit}`
+          : JSON.stringify(send);
+      setUpdates((updates) => [...updates, `${name} threw ${sendStr}(${length})`]);
     });
 
     // change of turn
@@ -136,7 +172,8 @@ const Game = ({ socket, name, room, setLoggedIn }) => {
     socket.current.on("end_game", (message) => {
       setLoggedIn(false);
       socket.current.emit("leave_room", { name, room });
-      window.alert(`${message}`);
+      // replaced blocking alert with toast
+      showMessage(`${message}`);
     });
 
     // getting the picked card
@@ -148,8 +185,8 @@ const Game = ({ socket, name, room, setLoggedIn }) => {
 
     // result of declaration
     socket.current.on("declare_result", (result) => {
-      window.alert(result);
-      socket.current.emit("start_game", room);
+      // show result in toast and emit start_game after toast closes
+      showMessage(result, () => socket.current.emit("start_game", room));
     });
   }, [socket.current]);
 
@@ -168,10 +205,9 @@ const Game = ({ socket, name, room, setLoggedIn }) => {
 
   const throwHandler = () => {
     if (sendCard === -1) {
-      alert("choose a card to throw");
+      showMessage("Choose a card to throw");
     } else {
       let update = `${name} threw ${throwCards[0].card}`;
-      // socket.current.emit('update', { update, room });
       setPick(true);
       for (let i = 0; i < playerCards.length; i++) {
         if (playerCards[i].value === opencard.value) {
@@ -216,11 +252,11 @@ const Game = ({ socket, name, room, setLoggedIn }) => {
       return;
     }
     if (getHandValue() === 1) {
-      window.alert("you have to declare because you only have an Ace");
+      // replaced blocking alert
+      showMessage("You have to declare because you only have an Ace");
       return;
     }
     if (e.target.parentElement.id === "throw") {
-      // setSendCard(-1);
       setSendCard(-1);
       const tempArr = [...throwCards];
       setPlayerCards([
@@ -231,8 +267,8 @@ const Game = ({ socket, name, room, setLoggedIn }) => {
     } else {
       if (pickedOpen !== null) {
         if (playerCards[e.target.id.substring(10) - 1].value !== pickedOpen) {
-          window.alert(
-            "you can only throw the card that you have picked in the previous round"
+          showMessage(
+            "You can only throw the card that you have picked in the previous round"
           );
           return null;
         }
@@ -257,7 +293,7 @@ const Game = ({ socket, name, room, setLoggedIn }) => {
           ]);
           setPlayerCards(tempArr);
         } else {
-          window.alert("cards don't have the same value");
+          showMessage("Cards don't have the same value");
         }
       }
     }
@@ -269,116 +305,57 @@ const Game = ({ socket, name, room, setLoggedIn }) => {
   };
 
   return (
-    <div className="game">
-      <div className="players flex-centered">
+    <div className="game" style={responsiveStyles.game}>
+      <RoundInfo roundNumber={roundNumber} styles={responsiveStyles} />
+      <div className="players flex-centered" style={responsiveStyles.players}>
         {players.map((player) => (
-          // <Avatar className={classes.orange}>{player.substring(0, 1).toUpperCase()}</Avatar>
-          <ProfileCircle
-            name={player}
-            currentName={currentTurn}
-            color={grey[900]}
-          />
+          <ProfileCircle name={player} currentName={currentTurn} color={grey[900]} />
         ))}
       </div>
-      <div className="flex-centered">
-        <div id="cards">
-          Board:
-          <div id="board" className="flex-centered">
-            <div className="flex-centered-column button">
-              <div id="deck" className="card" style={ styleCardSize }></div>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  pickHandler("deck");
-                }}
-                disabled={!(myTurn && pick)}
-              >
-                pick from deck
-              </Button>
-            </div>
-            <div className="flex-centered-column button">
-              {opencard ? (
-                <div
-                  id="opencard"
-                  className="card"
-                  style={{ backgroundPosition: opencard.backgroundPosition, ...styleCardSize }}
-                ></div>
-              ) : (
-                <div></div>
-              )}
-              <Button
-                variant="contained"
-                onClick={() => {
-                  pickHandler("opencard");
-                }}
-                disabled={!(myTurn && pick && pickOpen)}
-              >
-                pick open card
-              </Button>
-            </div>
-            <div className="flex-centered-column button">
-              <div className="throw" id="throw" ref={throwing} style={{ height: '100%' }}>
-                {throwCards.map((card, index) => (
-                  <div
-                    id={"playerCard".concat((index + 1).toString())}
-                    className="card"
-                    onClick={setThrowCard}
-                    style={{ backgroundPosition: card.backgroundPosition, ...styleCardSize }}
-                  ></div>
-                ))}
-              </div>
-              <Button
-                variant="contained"
-                onClick={throwHandler}
-                disabled={!(myTurn && !pick)}
-              >
-                throw
-              </Button>
-            </div>
-          </div>
-          <hr />
-          Player's card:
-          <div id="playerCards flex-centered">
-            <div id="playercards">
-              {playerCards.map((card, index) => (
-                <div
-                  id={"playerCard".concat((index + 1).toString())}
-                  className="card"
-                  onClick={setThrowCard}
-                  style={{ backgroundPosition: card.backgroundPosition, ...styleCardSize }}
-                ></div>
-              ))}
-            </div>
-            <div className="flex-centered-column">
-              <div className="button">
-                <Button
-                  ref={nextButton}
-                  variant="contained"
-                  disabled={!(myTurn && !pick && canDeclare)}
-                  onClick={declareHandler}
-                >
-                  Declare
-                </Button>
-              </div>
-              <div className="button">
-                <Button variant="contained" onClick={endGame}>
-                  End game
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="updates">
-          <h2>Updates</h2>
-          <div className="list">
-            <ul>
-              {updates.map((update, index) => (
-                <li key={index}>{update}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
+      <hr />
+      <Shares styleCardSize={styleCardSize} styles={responsiveStyles} />
+      <hr />
+      <Board
+        opencard={opencard}
+        throwCards={throwCards}
+        pick={pick}
+        myTurn={myTurn}
+        pickOpen={pickOpen}
+        pickHandler={pickHandler}
+        throwHandler={throwHandler}
+        setThrowCard={setThrowCard}
+        styleCardSize={styleCardSize}
+        throwingRef={throwing}
+        styles={responsiveStyles}
+      />
+      <PlayerHand
+        playerCards={playerCards}
+        setThrowCard={setThrowCard}
+        myTurn={myTurn}
+        pick={pick}
+        canDeclare={canDeclare}
+        declareHandler={declareHandler}
+        endGame={endGame}
+        styleCardSize={styleCardSize}
+        styles={responsiveStyles}
+        nextButtonRef={nextButton}
+      />
+      <Updates updates={updates} styles={responsiveStyles} />
+
+      {/* Blurred overlay while snackbar is open */}
+      {snackbar.open && <div style={overlayStyle} />}
+
+      {/* Snackbar for modern non-blocking messages */}
+      <Snackbar
+        anchorOrigin={{ vertical: "center", horizontal: "center" }}
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        message={<span style={snackbarMessageStyle}>{snackbar.message}</span>}
+        ContentProps={{ style: snackbarContentStyle }}
+        // ensure it's above the overlay
+        style={{ zIndex: 1401 }}
+      />
     </div>
   );
 };

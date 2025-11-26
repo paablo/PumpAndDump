@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 import io from "socket.io-client";
-import GithubCorner from "react-github-corner";
+//import GithubCorner from "react-github-corner";
 
 // importing components
 import LoginPage from "./components/LoginPage";
@@ -13,7 +13,7 @@ const CONNECTION = "/";
 const App = () => {
   const [loggedIn, setLoggedIn] = useState(false);
   const [name, setName] = useState("");
-  const [room, setRoom] = useState("");
+  const [room, setRoom] = useState("test");
 
   const socket = useRef();
 
@@ -44,7 +44,7 @@ const App = () => {
           setRoom={setRoom}
         />
       )}
-      <GithubCorner href="https://github.com/Maryll-castelino/card-game" />
+
     </div>
   );
 };
