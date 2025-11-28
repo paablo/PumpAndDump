@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
+import './App.css';
+import './card-styles.css'; /* <-- new global card styles */
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 

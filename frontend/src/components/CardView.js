@@ -1,6 +1,6 @@
 import React from "react";
 
-const CardView = ({ card, id, onClick, className = "card", styleCardSize = {} }) => {
+const CardView = ({ card, id, onClick, className = "card playingCard", styleCardSize = {} }) => {
   const style = card
     ? { backgroundPosition: card.backgroundPosition, ...styleCardSize }
     : { ...styleCardSize };

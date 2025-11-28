@@ -1,16 +1,11 @@
-const PlayingCard = require("./PlayingCard");
-
 class Deck {
-  constructor() {
-    this.deck = [];
-    this.reset(); // Add 52 cards to the deck
-    this.shuffle(); // Shuffle the deck
+  constructor(deck = []) {
+    this.deck = deck;
+    this.shuffle();
   }
 
   reset() {
     this.deck = [];
-    this.deck = PlayingCard.createDeck();
-    console.log("Deck:",this.deck);
   }
 
   shuffle() {

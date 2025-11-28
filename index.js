@@ -125,7 +125,7 @@ io.on("connection", (socket) => {
 				r.endGame(io, socket.nickname);
 				delete rooms[room];
 			} else {
-				io.in(room).emit("end_game", `${socket.nickname} has ended the game`);
+				io.in(room).emit("end_game", `${socket.nickname} has ended the game!`);
 			}
 		} catch (error) {
 			console.log(error.message);

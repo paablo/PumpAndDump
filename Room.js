@@ -1,4 +1,6 @@
 const Deck = require("./Deck");
+const PlayingCard = require("./PlayingCard");
+const StockCard = require("./StockCard");
 
 class Room {
 	constructor(name) {
@@ -11,6 +13,9 @@ class Room {
 		this.opencard = null;
 		this._turn = 0;
 		this.handValues = {};
+		this.stockDeck = [];
+		// new: track 4 market indexes in addition to stock cards
+		this.indexes = [];
 	}
 
 	addPlayer(name) {
@@ -28,7 +33,18 @@ class Room {
 
 	startGame(io) {
 		this.start = true;
-		this.deck = new Deck();
+		var playingCardDeck = PlayingCard.createDeck();
+		this.deck = new Deck(playingCardDeck);
+		var stockDeck = StockCard.createDeck();
+		this.stockDeck = new Deck(stockDeck);
+
+		// generate 4 indexes and assign random starting prices: 5 + randomInt(1..6)
+		const indexNames = ["tech", "finance", "manufacturing", "health_science"];
+		this.indexes = indexNames.map((n) => ({
+			name: n,
+			price: 5 + (Math.floor(Math.random() * 6) + 1), // 6..11
+		}));
+
 		if (this.deck.length() < 7) {
 			this.deck.reset();
 			this.deck.shuffle();
@@ -38,12 +54,19 @@ class Room {
 		const roomSet = io.sockets.adapter.rooms.get(this.name);
 		if (!roomSet) return;
 
+		const stock1 = this.stockDeck.deal();
+		const stock2 = this.stockDeck.deal();
+		const stock3 = this.stockDeck.deal();
+
 		for (const playerSocketId of roomSet) {
 			const card1 = this.deck.deal();
 			const card2 = this.deck.deal();
 			const card3 = this.deck.deal();
 			const card4 = this.deck.deal();
 			const cards = [card1, card2, card3, card4];
+			const stocks = [stock1, stock2, stock3];
+			console.log("Stocks:", JSON.stringify(stocks));
+			console.log("Indexes:", JSON.stringify(this.indexes));
 			const playerNames = this.names;
 			const socket = io.sockets.sockets.get(playerSocketId);
 			const playerName = socket.nickname;
@@ -56,6 +79,9 @@ class Room {
 				cards,
 				playerNames,
 				playerCash,
+				stocks,
+				// new: include indexes payload (frontend can read this)
+				indexes: this.indexes,
 			});
 		}
 		io.in(this.name).emit("cash_update", this.playerCash);
@@ -70,7 +96,7 @@ class Room {
 
 	endGame(io, enderName) {
 		this.start = false;
-		io.in(this.name).emit("end_game", `${enderName} has ended the game`);
+		io.in(this.name).emit("end_game", `${enderName} has ended the game!`);
 		// cleanup (if needed) is left to the caller that manages Room instances
 	}
 
@@ -112,13 +138,13 @@ class Room {
 		if (caught) {
 			io.to(this.name).emit(
 				"declare_result",
-				`${declarerName} has declared and has been caught`
+				`Player '${declarerName}' has declared and has been caught!`
 			);
 			for (const [id, socketObj] of io.sockets.sockets) {
 				if (socketObj.nickname === declarerName) {
 					io.to(id).emit(
 						"declare_result",
-						`your have declared and have been caught`
+						`You have declared and have been caught!`
 					);
 					break;
 				}
@@ -132,7 +158,7 @@ class Room {
 				if (socketObj.nickname === declarerName) {
 					io.to(id).emit(
 						"declare_result",
-						`your have declared and have won this round`
+						`You have declared and have won this round!`
 					);
 					break;
 				}

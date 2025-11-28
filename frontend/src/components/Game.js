@@ -16,18 +16,15 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
   const [myTurn, setMyTurn] = useState(false);
   const [sendCard, setSendCard] = useState(-1);
   const [players, setPlayers] = useState([]);
+  // add stocks state to show stockcards sent by server
+  const [stocks, setStocks] = useState([]);
+  // new: track indexes sent from server
+  const [indexes, setIndexes] = useState([]);
   const [currentTurn, setCurrentTurn] = useState("");
   const [pick, setPick] = useState(false);
   const [pickOpen, setPickOpen] = useState(false);
   const [pickedOpen, setPickedOpen] = useState(null);
   const [canDeclare, setCanDeclare] = useState(true);
-  const [colors, setColors] = useState([
-    "#6272a4",
-    "#50fa7b",
-    "#ffb86c",
-    "#ff79c6",
-    "#ff5555",
-  ]);
 
   // Add snackbar state for modern non-blocking messages and a pendingAction to emulate blocking alerts when needed
   const [snackbar, setSnackbar] = useState({ open: false, message: "" });
@@ -58,81 +55,13 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
   const nextButton = useRef(null);
   const throwing = useRef(null);
 
-  // Add responsive styles
-  const responsiveStyles = {
-    game: {
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      padding: "10px",
-    },
-    roundInfo: {
-      marginBottom: "10px",
-      textAlign: "center",
-    },
-    players: {
-      display: "flex",
-      justifyContent: "center",
-      flexWrap: "wrap",
-      marginBottom: "20px",
-    },
-    board: {
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      marginBottom: "20px",
-    },
-    shares: {
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      marginBottom: "16px",
-      width: "100%",
-    },
-    cards: {
-      display: "flex",
-      flexWrap: "wrap",
-      justifyContent: "center",
-      gap: "10px",
-    },
-    updates: {
-      marginTop: "20px",
-      width: "100%",
-      maxWidth: "400px",
-      textAlign: "center",
-    },
-  };
-
-  // Add overlay and snackbar-specific styles
-  const overlayStyle = {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.25)",
-    backdropFilter: "blur(6px)",
-    WebkitBackdropFilter: "blur(6px)",
-    zIndex: 1400, // below snackbar
-  };
-
-  const snackbarContentStyle = {
-    padding: "18px 28px",
-    minWidth: "420px",
-    maxWidth: "90vw",
-    borderRadius: 8,
-    boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-  };
-
-  const snackbarMessageStyle = {
-    fontSize: "1.15rem",
-    lineHeight: 1.2,
-    textAlign: "center",
-    color: "#fff",
-    width: "100%",
-    display: "block",
-  };
+  // Removed responsiveStyles, overlayStyle, snackbarContentStyle, snackbarMessageStyle
+  // Styles moved to App.css. Children still receive an empty styles object to avoid breaking API.
+  const emptyStyles = {};
 
   useEffect(() => {
     // Starting values of opnecard, player cards and player names
-    socket.current.on("start_variables", ({ opencard, cards, playerNames }) => {
+    socket.current.on("start_variables", ({ opencard, cards, playerNames, stocks, indexes }) => {
       setOpencard(new Card(opencard));
       let tempCards = [];
       for (let i = 0; i < cards.length; i++) {
@@ -140,6 +69,10 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
       }
       setPlayerCards(tempCards);
       setPlayers(playerNames);
+      // store raw stock objects (server sends basic stock data)
+      setStocks(Array.isArray(stocks) ? stocks : []);
+      // store indexes from server
+      setIndexes(Array.isArray(indexes) ? indexes : []);
     });
 
     // get opencard after every turn
@@ -293,7 +226,7 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
           ]);
           setPlayerCards(tempArr);
         } else {
-          showMessage("Cards don't have the same value");
+          showMessage("Those cards don't have the same value!");
         }
       }
     }
@@ -305,15 +238,16 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
   };
 
   return (
-    <div className="game" style={responsiveStyles.game}>
-      <RoundInfo roundNumber={roundNumber} styles={responsiveStyles} />
-      <div className="players flex-centered" style={responsiveStyles.players}>
+    <div className="game">
+      <RoundInfo roundNumber={roundNumber} styles={emptyStyles} />
+      <div className="players flex-centered">
         {players.map((player) => (
           <ProfileCircle name={player} currentName={currentTurn} color={grey[900]} />
         ))}
       </div>
       <hr />
-      <Shares styleCardSize={styleCardSize} styles={responsiveStyles} />
+      {/* pass stocks and indexes to Shares so it can render stockcards and index prices */}
+      <Shares styleCardSize={styleCardSize} styles={emptyStyles} stocks={stocks} indexes={indexes} />
       <hr />
       <Board
         opencard={opencard}
@@ -326,7 +260,7 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
         setThrowCard={setThrowCard}
         styleCardSize={styleCardSize}
         throwingRef={throwing}
-        styles={responsiveStyles}
+        styles={emptyStyles}
       />
       <PlayerHand
         playerCards={playerCards}
@@ -337,13 +271,13 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
         declareHandler={declareHandler}
         endGame={endGame}
         styleCardSize={styleCardSize}
-        styles={responsiveStyles}
+        styles={emptyStyles}
         nextButtonRef={nextButton}
       />
-      <Updates updates={updates} styles={responsiveStyles} />
+      <Updates updates={updates} styles={emptyStyles} />
 
       {/* Blurred overlay while snackbar is open */}
-      {snackbar.open && <div style={overlayStyle} />}
+      {snackbar.open && <div className="overlay" />}
 
       {/* Snackbar for modern non-blocking messages */}
       <Snackbar
@@ -351,10 +285,9 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={handleSnackbarClose}
-        message={<span style={snackbarMessageStyle}>{snackbar.message}</span>}
-        ContentProps={{ style: snackbarContentStyle }}
-        // ensure it's above the overlay
-        style={{ zIndex: 1401 }}
+        message={<span className="snackbar-message">{snackbar.message}</span>}
+        ContentProps={{ className: "snackbar-content" }}
+        className="snackbar-fixed"
       />
     </div>
   );

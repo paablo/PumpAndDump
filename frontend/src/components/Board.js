@@ -21,7 +21,7 @@ const Board = ({
         Board:
         <div id="board" className="flex-centered">
           <div className="flex-centered-column button">
-            <div id="deck" className="card" style={styleCardSize}></div>
+            <div id="deck" className="card playingCard" style={styleCardSize}></div>
             <Button
               variant="contained"
               onClick={() => {

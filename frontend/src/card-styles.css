@@ -1,0 +1,156 @@
+/* Card container and IDs */
+#cards {
+  min-width: 82vmin;
+}
+
+#board {
+  min-height: 220px;
+}
+
+#playerCards {
+  clear: both;
+  /* width:100%; */
+  min-height: 220px;
+}
+
+/* Throw / small card */
+.throw {
+  height: 160px;
+  min-width: 120px;
+  color: white;
+  background-color: white;
+  border-radius: 10px;
+  border: 5px solid #282828;
+}
+
+/* Playing card background */
+.playingCard {
+  /* background-image: url('https://i.imgur.com/yKggR5N.png'); */
+  background-image: url('./components/newbackground.png');
+  /* background-size: cover; */
+  background-position-x: 0px;
+  background-position-y: center;
+  background-repeat: none;
+  background-position: middle center;  
+}
+
+/* Standard card */
+.card {
+  box-sizing: border-box;  
+  width: 63.5mm;
+  height: 88.9mm;
+  margin:10px;
+  float: left;  
+  border: 1px #555555 solid;
+  border-radius: 10px;
+  -webkit-box-shadow: 2px 2px 3px 0px #000000; 
+  box-shadow: 2px 2px 3px 0px #000000; 
+  background-color: white;
+}
+
+/* Stock card styles (moved out to override .card where used) */
+.stock-card {
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  background: #fff;
+  text-align: left;
+  width: 63.5mm;
+  height: 88.9mm;
+  float: none !important; /* override .card float */
+}
+
+/* Company name at top, bold */
+.stock-card-top {
+  font-weight: 800;
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+/* Dividend (now part of the bottom-left stack) */
+.stock-card-dividend {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Growth label (stacked under dividend) */
+.stock-card-growth {
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+/* Spacer keeps the name at the top and bottom row at the bottom */
+.stock-card-spacer {
+  flex-grow: 1;
+}
+
+/* Bottom row: left column (dividend+growth) stacked, right column (base) aligned right */
+.stock-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 6px;
+}
+
+.stock-card-bottom-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.stock-card-bottom-right {
+  text-align: right;
+}
+
+HR {
+  margin-top:12px;
+  display: block;
+  width:100%;
+}
+
+BUTTON {
+  cursor: pointer;
+  width:200px;
+  height:40px;
+  text-align:center;
+  margin:20px;
+  border-radius: 5px;
+  
+}
+
+/* Card lists / horizontal scrolling containers */
+.cards {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;            /* keep cards on a single horizontal line */
+  justify-content: flex-start;  /* left-align, let overflow scroll */
+  gap: 10px;
+  overflow-x: auto;             /* allow horizontal scroll when many cards */
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+}
+
+/* Explicit horizontal containers used in JSX */
+.share-cards,
+.playerCards {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent floats from breaking flex layout and keep cards from shrinking */
+.cards .card,
+.share-cards .card,
+.playerCards .card {
+  float: none !important;
+  flex: 0 0 auto;
+}
