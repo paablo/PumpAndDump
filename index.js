@@ -91,19 +91,6 @@ io.on("connection", (socket) => {
 		}
 	});
 
-	socket.on("click", ({ name, room, send, length }) => {
-		try {
-			io.in(room).emit("update", { name, send, length });
-			const r = rooms[room];
-			if (r) {
-				r.opencard = send;
-				io.in(room).emit("open_card", r.opencard);
-			}
-		} catch (error) {
-			console.log(error.message);
-		}
-	});
-
 	let current_room;
 
 	socket.on("start_game", (room) => {
@@ -132,35 +119,12 @@ io.on("connection", (socket) => {
 		}
 	});
 
-	socket.on("turn_over", ({ room, pickedOption }) => {
+	socket.on("turn_over", ({ room }) => {
 		try {
 			const r = rooms[room];
 			if (!r) return;
-			r.pickCardForSocket(socket.id, pickedOption, io);
+			// Simply advance to next player's turn
 			r.advanceTurn(io);
-		} catch (error) {
-			console.log(error.message);
-		}
-	});
-
-	socket.on("hand_value", ({ handValue, room }) => {
-		try {
-			const r = rooms[room];
-			if (!r) return;
-			r.updateHandValue(socket.nickname, handValue);
-		} catch (error) {
-			console.log(error.message);
-		}
-	});
-
-	socket.on("declare", ({ handValue, room }) => {
-		console.log("declare received");
-		try {
-			const r = rooms[room];
-			if (!r) return;
-			// ensure declarer's value is recorded
-			r.updateHandValue(socket.nickname, handValue);
-			r.handleDeclare(socket.nickname, io);
 		} catch (error) {
 			console.log(error.message);
 		}

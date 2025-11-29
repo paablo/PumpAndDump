@@ -2,9 +2,13 @@ const Card = require("./Card");
 
 class PlayingCard extends Card {
   constructor(suit, value) {
-    super(value);
+    const name = `${value} of ${suit}`;
+    const description = "A standard playing card";
+    super(name, description);
+    
     this.suit = suit;
-    this.description = "PlayingCard";
+    this.value = value;
+    
     // derive a numeric rank for common card names
     if (typeof value === "number") {
       this.rank = value;
@@ -19,7 +23,18 @@ class PlayingCard extends Card {
   }
 
   toString() {
-    return `${this.value} of ${this.suit}`;
+    return this.name;
+  }
+
+  // Ensure proper JSON serialization
+  toJSON() {
+    return {
+      name: this.name,
+      description: this.description,
+      suit: this.suit,
+      value: this.value,
+      rank: this.rank
+    };
   }
 
   // add static suit/value definitions and deck factory

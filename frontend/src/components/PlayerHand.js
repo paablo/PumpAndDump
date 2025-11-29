@@ -4,11 +4,8 @@ import CardView from "./CardView";
 
 const PlayerHand = ({
   playerCards,
-  setThrowCard,
   myTurn,
-  pick,
-  canDeclare,
-  declareHandler,
+  endTurnHandler,
   endGame,
   styleCardSize,
   styles,
@@ -45,7 +42,7 @@ const PlayerHand = ({
   return (
     <div>
       <hr />
-      Player's card:
+      Player's cards:
       {/* use className (no spaces in id) and apply containerStyle */}
       <div className="playerCards flex-centered" style={containerStyle}>
         <div id="playercards" style={cardsContainerStyle}>
@@ -54,7 +51,6 @@ const PlayerHand = ({
               key={index}
               card={card}
               id={"playerCard".concat((index + 1).toString())}
-              onClick={setThrowCard}
               styleCardSize={styleCardSize}
             />
           ))}
@@ -64,15 +60,16 @@ const PlayerHand = ({
             <Button
               ref={nextButtonRef}
               variant="contained"
-              disabled={!(myTurn && !pick && canDeclare)}
-              onClick={declareHandler}
+              color="primary"
+              disabled={!myTurn}
+              onClick={endTurnHandler}
             >
-              Declare
+              End Turn
             </Button>
           </div>
           <div className="button">
             <Button variant="contained" onClick={endGame}>
-              End game
+              End Game
             </Button>
           </div>
         </div>

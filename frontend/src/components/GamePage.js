@@ -60,7 +60,7 @@ const GamePage = ({ socket, name, room, setLoggedIn }) => {
   };
 
   return (
-    <div className="gamepage" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "10px", boxSizing: "border-box" }}>
+    <div className="gamepage">
       {start ? (
         <Game
           room={room}
@@ -70,45 +70,95 @@ const GamePage = ({ socket, name, room, setLoggedIn }) => {
           roundNumber={roundNumber}
         />
       ) : (
-        <div className="flex-centered" style={{ width: "100%", maxWidth: "600px" }}>
-          <div className="login flex-centered-column" style={{ width: "100%" }}>
-            <h2 style={{ textAlign: "center" }}>
-              You have joined room <span style={{ color: "blue" }}>{room}</span>{" "}
-            </h2>
-            <h2 style={{ textAlign: "center" }}>there are currently {playerCount} player(s) in this room</h2>
-            <h1 style={{ textAlign: "center" }}>Start the game?</h1>
-            <div className="actions" style={{ display: "flex", justifyContent: "space-around", width: "100%" }}>
-              <div className="button">
-                <Button
-                  color="primary"
-                  variant="contained"
-                  onClick={startGame}
-                  className="abutton"
-                  style={{ width: "100%" }}
-                >
-                  {" "}
-                  start{" "}
-                </Button>
+        <div className="lobby-page">
+          <div className="lobby-container">
+            {/* Lobby Header */}
+            <div className="lobby-header">
+              <div className="lobby-title">
+                <span className="lobby-icon">🎪</span>
+                <h1>Game Lobby</h1>
               </div>
-              <div className="button">
-                <Button
-                  color="primary"
-                  variant="contained"
-                  onClick={leaveRoom}
-                  style={{ width: "100%" }}
-                >
-                  {" "}
-                  Leave room{" "}
-                </Button>
+              <div className="room-badge">
+                <span className="badge-label">Room Code:</span>
+                <span className="badge-value">{room}</span>
               </div>
             </div>
-          </div>
-          <div className="updates" style={{ marginTop: "20px", width: "100%" }}>
-            <ul style={{ padding: "0", listStyleType: "none", textAlign: "center" }}>
-              {updates.map((update, index) => (
-                <li key={index}>{update}</li>
-              ))}
-            </ul>
+
+            {/* Players Section */}
+            <div className="lobby-card players-card">
+              <div className="card-header">
+                <h2>👥 Players</h2>
+                <div className="player-count-badge">
+                  {playerCount} {playerCount === 1 ? 'Player' : 'Players'}
+                </div>
+              </div>
+              <div className="card-content">
+                {playerCount === 0 ? (
+                  <div className="empty-state">
+                    <p>⏳ Waiting for players to join...</p>
+                  </div>
+                ) : (
+                  <div className="players-grid">
+                    {Array.from({ length: playerCount }).map((_, index) => (
+                      <div key={index} className="player-avatar">
+                        <div className="avatar-circle">
+                          <span className="avatar-icon">🎮</span>
+                        </div>
+                        <span className="avatar-label">Player {index + 1}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {playerCount < 2 && (
+                  <div className="info-message">
+                    <span className="info-icon">ℹ️</span>
+                    <span>Need at least 2 players to start</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Activity Feed */}
+            {updates.length > 0 && (
+              <div className="lobby-card activity-card">
+                <div className="card-header">
+                  <h2>📢 Activity Feed</h2>
+                </div>
+                <div className="card-content">
+                  <div className="activity-list">
+                    {updates.slice(-5).reverse().map((update, index) => (
+                      <div key={index} className="activity-item">
+                        <span className="activity-dot"></span>
+                        <span className="activity-text">{update}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="lobby-actions">
+              <Button
+                color="primary"
+                variant="contained"
+                onClick={startGame}
+                className="lobby-button start-button"
+                size="large"
+                disabled={playerCount < 2}
+              >
+                🚀 Start Game
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={leaveRoom}
+                className="lobby-button leave-button"
+                size="large"
+              >
+                🚪 Leave Room
+              </Button>
+            </div>
           </div>
         </div>
       )}

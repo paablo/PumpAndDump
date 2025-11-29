@@ -2,11 +2,10 @@ const Card = require('./Card');
 
 class StockCard extends Card {
   constructor({ name, baseCost = 0, dividend = 0, growth = 1, description = 'Stock', industrySector='None', archetype="None" } = {}) {
-    // pass a representative value to base Card (use name)
-    super(name);
-
-    // ...existing code...
-    this.name = String(name || 'Unnamed Stock');
+    // pass name and description to base Card
+    const stockName = String(name || 'Unnamed Stock');
+    const stockDescription = String(description || 'Stock');
+    super(stockName, stockDescription);
 
     // baseCost can be positive or negative number
     this.baseCost = Number(baseCost);
@@ -25,8 +24,6 @@ class StockCard extends Card {
     if (!Number.isInteger(this.growth) || this.growth <= 0) {
       throw new Error('growth must be a positive integer');
     }
-
-    this.description = String(description);
 
     // Set and validate industrySector (must be a non-empty string)
     this.industrySector = String(industrySector || 'None').trim();
@@ -61,10 +58,40 @@ class StockCard extends Card {
   }
 
   toString() {
-    return `${this.name} — base:${this.baseCost} dividend:${this.dividend} growth:${this.growth} sector:${this.industrySector} archetype:${this.archetype}`;
+    return `${this.name} — base:${this.baseCost} dividend:${this.dividend} growth:${this.growth} sector:${this.industrySector} archetype:${this.archetype} — ${this.description}`;
   }
 
-    static createDeck() {
+  // Get the related index for this stock
+  getRelatedIndex(indexes) {
+    if (!Array.isArray(indexes)) return null;
+    return indexes.find(idx => idx.name === this.industrySector);
+  }
+
+  // Get the current cost based on related index price
+  getCostWithIndex(indexes) {
+    const relatedIndex = this.getRelatedIndex(indexes);
+    if (!relatedIndex) return this.baseCost;
+    
+    // Calculate cost as baseCost + (index price - 10) 
+    // This means index at 10 = no modifier, above 10 = more expensive, below 10 = cheaper
+    const indexModifier = relatedIndex.price - 10;
+    return Math.max(1, this.baseCost + indexModifier);
+  }
+
+  // Ensure proper JSON serialization
+  toJSON() {
+    return {
+      name: this.name,
+      description: this.description,
+      baseCost: this.baseCost,
+      dividend: this.dividend,
+      growth: this.growth,
+      industrySector: this.industrySector,
+      archetype: this.archetype
+    };
+  }
+
+  static createDeck() {
         const src = DEFAULT_DECK_DATA;
         if (!Array.isArray(src)) {
         throw new Error('createDeck expects an array of card spec objects');
@@ -80,149 +107,156 @@ class StockCard extends Card {
 
 // Add default deck data (the provided JSON)
 const DEFAULT_DECK_DATA = [
+  // TECH SECTOR
   {
-    "name": "TechTitan",
-    "baseCost": 8,
+    "name": "CloudNein",
+    "baseCost": 7,
     "dividend": 1,
     "growth": 5,
-    "description": "Parody of mega cloud computing giants, dominating data storage with endless server farms.",
+    "description": "Infinite server farms powered by venture capital and broken promises.",
     "industrySector": "tech",
-    "archetype": "High Growth Tech"
+    "archetype": "High Growth"
   },
   {
-    "name": "GadgetGuru",
+    "name": "PixelPanic",
+    "baseCost": 7,
+    "dividend": 3,
+    "growth": 2,
+    "description": "Legacy software empire draining enterprises with mandatory subscriptions.",
+    "industrySector": "tech",
+    "archetype": "High Dividend"
+  },
+  {
+    "name": "ByteBandit",
     "baseCost": 6,
     "dividend": 2,
-    "growth": 5,
-    "description": "Spoof on smartphone innovators, churning out shiny devices that break after one drop.",
-    "industrySector": "tech",
-    "archetype": "Growth Gadget Maker"
-  },
-  {
-    "name": "ByteBusters",
-    "baseCost": 4,
-    "dividend": 3,
-    "growth": 4,
-    "description": "Satire of antivirus firms, promising unbreakable firewalls that leak like sieves.",
-    "industrySector": "tech",
-    "archetype": "Balanced Software"
-  },
-  {
-    "name": "SockStream",
-    "baseCost": 2,
-    "dividend": 4,
-    "growth": 2,
-    "description": "Mockery of video streamers, buffering eternally while hoarding your subscription cash.",
-    "industrySector": "tech",
-    "archetype": "High Dividend Media"
-  },
-  {
-    "name": "MoneyMogul Bank",
-    "baseCost": 8,
-    "dividend": 4,
-    "growth": 2,
-    "description": "Parody of old-school investment banks, paying fat yields from dusty vaults.",
-    "industrySector": "finance",
-    "archetype": "High Dividend Lender"
-  },
-  {
-    "name": "WallSt Wizards",
-    "baseCost": 6,
-    "dividend": 3,
     "growth": 3,
-    "description": "Take on trading platforms, shuffling fees while pretending to democratize wealth.",
-    "industrySector": "finance",
-    "archetype": "Balanced Broker"
+    "description": "Cybersecurity theater promising protection while selling your data.",
+    "industrySector": "tech",
+    "archetype": "Balanced"
   },
   {
-    "name": "FinFiasco Insure",
-    "baseCost": 4,
-    "dividend": 2,
-    "growth": 4,
-    "description": "Spoof of fintech disruptors, growing fast on risky loans to impulse buyers.",
-    "industrySector": "finance",
-    "archetype": "Growth Fintech"
-  },
-  {
-    "name": "CashCouch Fund",
-    "baseCost": 2,
-    "dividend": 1,
-    "growth": 5,
-    "description": "Satire of high-risk hedge funds, volatile bets on meme coins and hype.",
-    "industrySector": "finance",
-    "archetype": "High Growth Speculator"
-  },
-  {
-    "name": "SteelStamp Corp",
-    "baseCost": 8,
-    "dividend": 4,
-    "growth": 2,
-    "description": "Parody of legacy auto makers, cranking dividends from rusty assembly lines.",
-    "industrySector": "manufacturing",
-    "archetype": "High Dividend Industrial"
-  },
-  {
-    "name": "WidgetWorks Ltd",
-    "baseCost": 6,
-    "dividend": 3,
-    "growth": 3,
-    "description": "Mock heavy machinery giants, steady output of gears and widgets forever.",
-    "industrySector": "manufacturing",
-    "archetype": "Balanced Manufacturer"
-  },
-  {
-    "name": "RoboForge Inc",
-    "baseCost": 4,
-    "dividend": 2,
-    "growth": 4,
-    "description": "Spoof on automation firms, expanding factories with glitchy AI robots.",
-    "industrySector": "manufacturing",
-    "archetype": "Growth Automator"
-  },
-  {
-    "name": "NutNut Bolts",
-    "baseCost": 2,
-    "dividend": 1,
-    "growth": 5,
-    "description": "Take on speculative drone makers, soaring high on vaporware promises.",
-    "industrySector": "manufacturing",
-    "archetype": "High Growth Innovator"
-  },
-  {
-    "name": "PillPush Pharma",
-    "baseCost": 8,
-    "dividend": 4,
-    "growth": 2,
-    "description": "Parody of big drug makers, milking patents for reliable pill profits.",
-    "industrySector": "health and science",
-    "archetype": "High Dividend Pharma"
-  },
-  {
-    "name": "GeneGamble Bio",
-    "baseCost": 6,
-    "dividend": 2,
-    "growth": 5,
-    "description": "Satire of biotech dreamers, betting on miracle cures that mostly flop.",
-    "industrySector": "health and science",
-    "archetype": "High Growth Biotech"
-  },
-  {
-    "name": "HealHack Labs",
-    "baseCost": 4,
+    "name": "HyperHype AI",
+    "baseCost": 9,
     "dividend": 3,
     "growth": 4,
-    "description": "Spoof on medtech wearables, tracking your steps to nowhere useful.",
-    "industrySector": "health and science",
-    "archetype": "Balanced Medtech"
+    "description": "Revolutionary machine learning that's actually just spreadsheets and hype.",
+    "industrySector": "tech",
+    "archetype": "Premium"
+  },
+  
+  // FINANCE SECTOR
+  {
+    "name": "GoldHoard Bank",
+    "baseCost": 7,
+    "dividend": 3,
+    "growth": 2,
+    "description": "Ancient institution hoarding wealth in marble vaults since the dawn of time.",
+    "industrySector": "finance",
+    "archetype": "High Dividend"
   },
   {
-    "name": "SerumStable Co",
-    "baseCost": 2,
+    "name": "CryptoChaos Fund",
+    "baseCost": 5,
+    "dividend": 0,
+    "growth": 5,
+    "description": "Gambling on digital tokens backed by memes and pure speculation.",
+    "industrySector": "finance",
+    "archetype": "High Growth"
+  },
+  {
+    "name": "FeeHarvest Co",
+    "baseCost": 7,
+    "dividend": 2,
+    "growth": 4,
+    "description": "Collecting tiny transaction fees from millions, one cent at a time.",
+    "industrySector": "finance",
+    "archetype": "Balanced"
+  },
+  {
+    "name": "MoneyPrinter Inc",
+    "baseCost": 10,
+    "dividend": 3,
+    "growth": 5,
+    "description": "Elite trading algorithms front-running markets with perfect legal immunity.",
+    "industrySector": "finance",
+    "archetype": "Premium"
+  },
+  
+  // INDUSTRIAL SECTOR
+  {
+    "name": "SteelDinosaur",
+    "baseCost": 7,
+    "dividend": 3,
+    "growth": 2,
+    "description": "Rusty factories churning out yesterday's products at tomorrow's prices.",
+    "industrySector": "industrial",
+    "archetype": "High Dividend"
+  },
+  {
+    "name": "RoboFuture Labs",
+    "baseCost": 7,
     "dividend": 1,
+    "growth": 5,
+    "description": "Prototype robots that break down more than they build up.",
+    "industrySector": "industrial",
+    "archetype": "High Growth"
+  },
+  {
+    "name": "WidgetMill",
+    "baseCost": 6,
+    "dividend": 2,
     "growth": 3,
-    "description": "Mock vaccine rushers, steady science with occasional booster hype.",
-    "industrySector": "health and science",
-    "archetype": "Steady Science"
+    "description": "Producing reliable widgets nobody asked for in quantities nobody needs.",
+    "industrySector": "industrial",
+    "archetype": "Balanced"
+  },
+  {
+    "name": "TitanForge",
+    "baseCost": 9,
+    "dividend": 3,
+    "growth": 4,
+    "description": "Massive industrial complex dominating supply chains through sheer inertia.",
+    "industrySector": "industrial",
+    "archetype": "Premium"
+  },
+  
+  // HEALTH & SCIENCE SECTOR
+  {
+    "name": "PillMill Pharma",
+    "baseCost": 7,
+    "dividend": 3,
+    "growth": 2,
+    "description": "Patent monopolies on life-saving drugs marked up 10,000 percent.",
+    "industrySector": "Health and Science",
+    "archetype": "High Dividend"
+  },
+  {
+    "name": "GeneSplice Dreams",
+    "baseCost": 5,
+    "dividend": 0,
+    "growth": 5,
+    "description": "Gene therapy startup burning cash faster than curing diseases.",
+    "industrySector": "Health and Science",
+    "archetype": "High Growth"
+  },
+  {
+    "name": "BandAid Biotech",
+    "baseCost": 6,
+    "dividend": 2,
+    "growth": 3,
+    "description": "Incremental improvements to medical devices nobody complained about.",
+    "industrySector": "Health and Science",
+    "archetype": "Balanced"
+  },
+  {
+    "name": "LifeCode Systems",
+    "baseCost": 10,
+    "dividend": 3,
+    "growth": 5,
+    "description": "Breakthrough treatments locked behind insurance bureaucracy and gold-plated pricing.",
+    "industrySector": "Health and Science",
+    "archetype": "Premium"
   }
 ];
 

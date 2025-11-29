@@ -1,13 +1,12 @@
 import React from "react";
-import IndexCard from "./IndexCard";
+import IndexCardView from "./IndexCardView";
 
-const Indexes = ({ indexes = [], styleCardSize, styles = {} }) => {
+const Indexes = ({ indexes = [], styleCardSize, styles = {}, activeEvents = [] }) => {
   return (
     <div className="indexes">
-      <h3>Indexes</h3>
       <div className="share-cards" style={styles.cards}>
         {Array.from({ length: 4 }).map((_, i) => (
-          <IndexCard key={i} ix={indexes[i]} styleCardSize={styleCardSize} />
+          <IndexCardView key={i} ix={indexes[i]} styleCardSize={styleCardSize} activeEvents={activeEvents} />
         ))}
       </div>
     </div>

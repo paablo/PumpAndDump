@@ -1,6 +1,8 @@
 const Deck = require("./Deck");
 const PlayingCard = require("./PlayingCard");
 const StockCard = require("./StockCard");
+const IndexCard = require("./IndexCard");
+const EventCard = require("./EventCard");
 
 class Room {
 	constructor(name) {
@@ -10,12 +12,14 @@ class Room {
 		this.roundNumber = 1;
 		this.playerCash = {};
 		this.deck = null;
-		this.opencard = null;
 		this._turn = 0;
-		this.handValues = {};
 		this.stockDeck = [];
 		// new: track 4 market indexes in addition to stock cards
 		this.indexes = [];
+		// event system
+		this.eventDeck = null;
+		this.activeEvents = []; // Events currently in play
+		this.gameLog = []; // Log of important game events
 	}
 
 	addPlayer(name) {
@@ -38,25 +42,20 @@ class Room {
 		var stockDeck = StockCard.createDeck();
 		this.stockDeck = new Deck(stockDeck);
 
-		// generate 4 indexes and assign random starting prices: 5 + randomInt(1..6)
-		const indexNames = ["tech", "finance", "manufacturing", "health_science"];
-		this.indexes = indexNames.map((n) => ({
-			name: n,
-			price: 5 + (Math.floor(Math.random() * 6) + 1), // 6..11
-		}));
+		// generate 4 market indexes using IndexCard factory
+		this.indexes = IndexCard.createIndexes();
 
-		if (this.deck.length() < 7) {
-			this.deck.reset();
-			this.deck.shuffle();
-		}
-		this.opencard = this.deck.deal();
+		// generate event deck
+		var eventCards = EventCard.createDeck();
+		this.eventDeck = new Deck(eventCards);
+		this.activeEvents = [];
+		this.gameLog = [];
+		this.addToGameLog(`Game started with ${this.names.length} players`);
 
 		const roomSet = io.sockets.adapter.rooms.get(this.name);
 		if (!roomSet) return;
 
-		const stock1 = this.stockDeck.deal();
-		const stock2 = this.stockDeck.deal();
-		const stock3 = this.stockDeck.deal();
+		const stocks = this.dealStocks();
 
 		for (const playerSocketId of roomSet) {
 			const card1 = this.deck.deal();
@@ -64,24 +63,18 @@ class Room {
 			const card3 = this.deck.deal();
 			const card4 = this.deck.deal();
 			const cards = [card1, card2, card3, card4];
-			const stocks = [stock1, stock2, stock3];
 			console.log("Stocks:", JSON.stringify(stocks));
 			console.log("Indexes:", JSON.stringify(this.indexes));
 			const playerNames = this.names;
-			const socket = io.sockets.sockets.get(playerSocketId);
-			const playerName = socket.nickname;
-			const playerCash =
-				this.playerCash && this.playerCash[playerName] !== undefined
-					? this.playerCash[playerName]
-					: 30;
 			io.to(playerSocketId).emit("start_variables", {
-				opencard: this.opencard,
 				cards,
 				playerNames,
-				playerCash,
+				playerCash: this.playerCash, // Send all players' cash
 				stocks,
 				// new: include indexes payload (frontend can read this)
 				indexes: this.indexes,
+				activeEvents: this.activeEvents.map(e => e.toJSON()),
+				gameLog: this.gameLog
 			});
 		}
 		io.in(this.name).emit("cash_update", this.playerCash);
@@ -100,73 +93,222 @@ class Room {
 		// cleanup (if needed) is left to the caller that manages Room instances
 	}
 
-	pickCardForSocket(socketId, pickedOption, io) {
-		if (pickedOption === "deck") {
-			io.to(socketId).emit("picked_card", this.deck.deal());
-		} else {
-			io.to(socketId).emit("picked_card", this.opencard);
-		}
-	}
-
 	advanceTurn(io) {
 		const roomSet = io.sockets.adapter.rooms.get(this.name);
 		if (!roomSet || roomSet.size === 0) return;
-		this._turn = (this._turn + 1) % roomSet.size;
+		const roomSize = roomSet.size;
+
+		// advance turn and detect wrap-around
+		this._turn = (this._turn + 1) % roomSize;
 		const current_room = Array.from(roomSet);
 		io.in(this.name).emit(
 			"your_turn",
 			io.sockets.sockets.get(current_room[this._turn]).nickname
 		);
+		console.log("Turn", this._turn);
+		console.log("Roomset", roomSet);
+
+		// If we've wrapped to player 0, every player has had one turn -> increment round and deal new stocks
+		if (this._turn === 0) {
+			// END OF ROUND PROCESSING
+
+			// 1. Process end-of-round conditional effects for active events
+			this.processConditionalEvents("end", io);
+
+			// 2. Draw and activate a new event
+			this.drawAndActivateEvent(io);
+
+			// 3. Process start-of-next-round events
+			this.processConditionalEvents("start", io);
+
+			// 4. Increment round
+			this.roundNumber++;
+			io.in(this.name).emit("round_update", this.roundNumber);
+
+			// 5. Deal new stock cards for the room
+			const stocks = this.dealStocks();
+
+			// 6. Broadcast updates to all players
+			io.in(this.name).emit("stocks_update", { 
+				stocks, 
+				indexes: this.indexes,
+				activeEvents: this.activeEvents.map(e => e.toJSON()),
+				gameLog: this.gameLog.slice(-10) // Send last 10 log entries
+			});
+			console.log("Dealt new stocks:", JSON.stringify(stocks));
+
+			// 7. Send round summary message
+			this.sendRoundSummary(io);
+		}
 	}
 
-	updateHandValue(playerName, value) {
-		this.handValues[playerName] = value;
+	// Get all stocks for a specific index/sector
+	getStocksForIndex(indexName) {
+		if (!this.stockDeck || !this.stockDeck.cards) return [];
+		return this.stockDeck.cards.filter(stock => stock.industrySector === indexName);
 	}
 
-	handleDeclare(declarerName, io) {
-		let caught = false;
-		const declarerValue = this.handValues[declarerName];
-		for (const [name, value] of Object.entries(this.handValues)) {
-			if (name === declarerName) continue;
-			if (value <= declarerValue) {
-				caught = true;
-				break;
+	// Get the index for a specific stock
+	getIndexForStock(stock) {
+		if (!stock || !this.indexes) return null;
+		return this.indexes.find(idx => idx.name === stock.industrySector);
+	}
+
+	// Update index prices based on stock activity (can be called when stocks are traded)
+	updateIndexPrices() {
+		if (!this.indexes || !this.stockDeck) return;
+		
+		this.indexes.forEach(index => {
+			const relatedStocks = index.getRelatedStocks(this.stockDeck.cards);
+			if (relatedStocks.length > 0) {
+				// Calculate new price based on sector performance
+				const performance = index.getSectorPerformance(this.stockDeck.cards);
+				// Gradually adjust index price towards sector performance
+				const adjustment = Math.sign(performance - index.price);
+				index.updatePrice(adjustment);
+			}
+		});
+	}
+
+	dealStocks(count = 3) {
+		// ensure there are enough stock cards; reset/shuffle if low
+		if (!this.stockDeck || typeof this.stockDeck.length !== "function" || this.stockDeck.length() < count) {
+			if (this.stockDeck && typeof this.stockDeck.reset === "function") this.stockDeck.reset();
+			if (this.stockDeck && typeof this.stockDeck.shuffle === "function") this.stockDeck.shuffle();
+		}
+
+		// deal N stock cards for the room
+		const stocks = [];
+		for (let i = 0; i < count; i++) {
+			stocks.push(this.stockDeck.deal());
+		}
+		return stocks;
+	}
+
+	// Draw a new event and apply its initial effects
+	drawAndActivateEvent(io) {
+		if (!this.eventDeck || this.eventDeck.length() === 0) {
+			// Reshuffle event deck if empty
+			const eventCards = EventCard.createDeck();
+			this.eventDeck = new Deck(eventCards);
+		}
+
+		const event = this.eventDeck.deal();
+		if (!event) return;
+
+		// Add to active events
+		this.activeEvents.push(event);
+
+		// Apply initial effects if timing is "start"
+		if (event.timing === "start") {
+			const results = event.applyEffects(this.indexes);
+			this.logEventEffects(event, results, "Initial");
+		}
+
+		// Log the event
+		this.addToGameLog(`📰 Event: ${event.name} - ${event.description}`);
+
+		// Emit event notification to all players
+		io.in(this.name).emit("event_played", {
+			event: event.toJSON(),
+			indexes: this.indexes
+		});
+	}
+
+	// Process conditional effects for events based on timing
+	processConditionalEvents(timing, io) {
+		const eventsToRemove = [];
+
+		for (let i = 0; i < this.activeEvents.length; i++) {
+			const event = this.activeEvents[i];
+			
+			// Check if event has conditional effects with matching timing
+			if (event.conditionalEffects && event.conditionalEffects.timing === timing) {
+				const result = event.applyConditionalEffects(this.indexes);
+				
+				if (result.triggered) {
+					// Log the conditional effect
+					this.logEventEffects(event, result.results, "Conditional", result.roll);
+					
+					// Emit notification
+					io.in(this.name).emit("event_triggered", {
+						event: event.toJSON(),
+						roll: result.roll,
+						results: result.results,
+						indexes: this.indexes
+					});
+
+					// Check if event should be discarded
+					if (event.shouldDiscard()) {
+						eventsToRemove.push(i);
+						this.addToGameLog(`🗑️ Event discarded: ${event.name}`);
+					}
+				}
+			}
+
+			// Also apply non-conditional events with matching timing
+			if (event.timing === timing && event.status === "pending") {
+				const results = event.applyEffects(this.indexes);
+				this.logEventEffects(event, results, "Applied");
 			}
 		}
 
-		// broadcast results
-		if (caught) {
-			io.to(this.name).emit(
-				"declare_result",
-				`Player '${declarerName}' has declared and has been caught!`
-			);
-			for (const [id, socketObj] of io.sockets.sockets) {
-				if (socketObj.nickname === declarerName) {
-					io.to(id).emit(
-						"declare_result",
-						`You have declared and have been caught!`
-					);
-					break;
-				}
-			}
-		} else {
-			io.to(this.name).emit(
-				"declare_result",
-				`${declarerName} has declared and has won this round`
-			);
-			for (const [id, socketObj] of io.sockets.sockets) {
-				if (socketObj.nickname === declarerName) {
-					io.to(id).emit(
-						"declare_result",
-						`You have declared and have won this round!`
-					);
-					break;
-				}
-			}
+		// Remove discarded events (iterate backwards to avoid index issues)
+		for (let i = eventsToRemove.length - 1; i >= 0; i--) {
+			this.activeEvents.splice(eventsToRemove[i], 1);
+		}
+	}
+
+	// Log event effects to game log
+	logEventEffects(event, results, effectType = "Effect", roll = null) {
+		const changes = results.map(r => {
+			if (r.error) return `${r.indexName}: ERROR`;
+			const sign = r.priceChange >= 0 ? '+' : '';
+			return `${r.indexName} ${sign}${r.priceChange} (${r.oldPrice}→${r.newPrice})`;
+		}).join(', ');
+
+		let logMessage = `📊 ${effectType} - ${event.name}: ${changes}`;
+		if (roll !== null) {
+			logMessage += ` [Roll: ${roll}]`;
 		}
 
-		this.roundNumber++;
-		io.in(this.name).emit("round_update", this.roundNumber);
+		this.addToGameLog(logMessage);
+	}
+
+	// Add entry to game log with timestamp
+	addToGameLog(message) {
+		this.gameLog.push({
+			round: this.roundNumber,
+			timestamp: new Date().toISOString(),
+			message
+		});
+		console.log(`[Round ${this.roundNumber}] ${message}`);
+	}
+
+	// Send round summary to all players
+	sendRoundSummary(io) {
+		// Build summary message - exclude resolved events
+		const nonResolvedEvents = this.activeEvents.filter(e => e.status !== 'resolved');
+		
+		let summaryMessage = `🎲 Round ${this.roundNumber} begins!`;
+		
+		if (nonResolvedEvents.length > 0) {
+			summaryMessage += `\n🎪 Active Events:`;
+			nonResolvedEvents.forEach(event => {
+				summaryMessage += `\n  • ${event.name}`;
+			});
+		}
+
+		// Emit round message
+		io.in(this.name).emit("round_message", {
+			round: this.roundNumber,
+			message: summaryMessage,
+			indexes: this.indexes,
+			activeEvents: this.activeEvents.map(e => e.toJSON()),
+			recentLog: this.gameLog.slice(-5) // Last 5 log entries
+		});
+
+		this.addToGameLog(`Round ${this.roundNumber} started`);
 	}
 }
 

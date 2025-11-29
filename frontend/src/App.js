@@ -23,6 +23,24 @@ const App = () => {
     });
   }, [socket]);
 
+  // Auto-login in dev mode
+  useEffect(() => {
+    const isDev = process.env.NODE_ENV === 'development';
+    
+    if (isDev && socket.current && !loggedIn) {
+      // Generate random name
+      const adjectives = ['Swift', 'Bold', 'Clever', 'Mighty', 'Lucky', 'Brave', 'Wise', 'Quick', 'Cool', 'Sharp'];
+      const nouns = ['Tiger', 'Eagle', 'Lion', 'Wolf', 'Bear', 'Fox', 'Hawk', 'Dragon', 'Phoenix', 'Panther'];
+      const randomName = `${adjectives[Math.floor(Math.random() * adjectives.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}${Math.floor(Math.random() * 100)}`;
+      
+      console.log(`[DEV MODE] Auto-joining room "${room}" as "${randomName}"`);
+      
+      setName(randomName);
+      socket.current.emit('join_room', { room, name: randomName });
+      setLoggedIn(true);
+    }
+  }, [socket.current, loggedIn, room]);
+
   
 
   return (
