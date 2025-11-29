@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Snackbar } from "@material-ui/core";
 
 import Card from "./CardModel";
 import Shares from "./Shares";
 import PlayerHand from "./PlayerHand";
+import GameHeader from "./GameHeader";
+import ActiveEvents from "./ActiveEvents";
+import MessageOverlay from "./MessageOverlay";
 
 const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
   const [updates, setUpdates] = useState([]);
@@ -15,6 +17,7 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
   const [indexes, setIndexes] = useState([]);
   // event system
   const [activeEvents, setActiveEvents] = useState([]);
+  const [visualEffects, setVisualEffects] = useState([]); // Combined effects for visual indicators
   const [gameLog, setGameLog] = useState([]);
   const [currentTurn, setCurrentTurn] = useState("");
   // player cash/wealth
@@ -107,21 +110,27 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
     });
 
     // stocks update when new round starts
-    socket.current.on("stocks_update", ({ stocks, indexes, activeEvents, gameLog }) => {
+    socket.current.on("stocks_update", ({ stocks, indexes, activeEvents, visualEffects, gameLog }) => {
       setStocks(Array.isArray(stocks) ? stocks : []);
       setIndexes(Array.isArray(indexes) ? indexes : []);
       setActiveEvents(Array.isArray(activeEvents) ? activeEvents : []);
+      setVisualEffects(Array.isArray(visualEffects) ? visualEffects : []);
       if (Array.isArray(gameLog)) {
         setGameLog(gameLog);
       }
       console.log("Stocks updated:", stocks);
       console.log("Indexes updated:", indexes);
       console.log("Active events:", activeEvents);
+      console.log("Visual effects:", visualEffects);
     });
 
     // event played notification
     socket.current.on("event_played", ({ event, indexes }) => {
-      setActiveEvents((prev) => [...prev, event]);
+      setActiveEvents((prev) => {
+        const updated = [...prev, event];
+        console.log("Event played - updating activeEvents:", updated);
+        return updated;
+      });
       setIndexes(Array.isArray(indexes) ? indexes : []);
       showMessage(`📰 Event: ${event.name} - ${event.description}`);
       console.log("Event played:", event);
@@ -182,135 +191,30 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
     socket.current.emit("end_game", room);
   };
 
-  // Get the most recent log entry (market news prioritized over player updates)
-  const getLastLogEntry = () => {
-    if (gameLog.length > 0) {
-      const lastLog = gameLog[gameLog.length - 1];
-      return `R${lastLog.round}: ${lastLog.message}`;
-    }
-    if (updates.length > 0) {
-      return updates[updates.length - 1];
-    }
-    return "No recent activity";
-  };
-
   return (
     <div className="game">
-      {/* Enhanced Header with Round Info, Player Wealth, and Collapsible Log */}
-      <div className="game-header">
-        <div className="game-info-bar">
-          <div className="round-badge">
-            Round {roundNumber}
-          </div>
-          <div className="players-wealth">
-            {players.map((player, idx) => (
-              <div 
-                key={idx} 
-                className={`player-wealth-item ${player === currentTurn ? 'active' : ''} ${player === name ? 'current-player' : ''}`}
-              >
-                <span className="player-name">
-                  {player === currentTurn && '▶ '}
-                  {player}
-                  {player === name && ' (You)'}
-                </span>
-                <span className="player-cash">
-                  💰 ${playerCash[player] !== undefined ? playerCash[player] : 30}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+      <GameHeader
+        roundNumber={roundNumber}
+        players={players}
+        currentTurn={currentTurn}
+        name={name}
+        playerCash={playerCash}
+        updates={updates}
+        gameLog={gameLog}
+        logExpanded={logExpanded}
+        setLogExpanded={setLogExpanded}
+      />
 
-        {/* Collapsible Game Log - Integrated into banner */}
-        {(updates.length > 0 || gameLog.length > 0) && (
-          <div className="game-log-banner">
-            <div 
-              className="log-banner-header clickable" 
-              onClick={() => setLogExpanded(!logExpanded)}
-            >
-              <span className="log-banner-icon">📊</span>
-              {logExpanded ? (
-                <span className="log-banner-title">Game Log & Market News</span>
-              ) : (
-                <span className="log-banner-preview">{getLastLogEntry()}</span>
-              )}
-              <span className="collapse-icon">{logExpanded ? '▼' : '▶'}</span>
-            </div>
-            {logExpanded && (
-              <div className="log-list">
-                {/* Market News from backend */}
-                {gameLog.length > 0 && gameLog.slice(-5).reverse().map((entry, index) => (
-                  <div key={`log-${index}`} className="log-item log-market">
-                    <span className="log-round">R{entry.round}</span>
-                    <span className="log-message">{entry.message}</span>
-                  </div>
-                ))}
-                
-                {/* Player updates */}
-                {updates.length > 0 && updates.slice(-5).reverse().map((update, index) => (
-                  <div key={`update-${index}`} className="log-item log-player">
-                    <span className="log-icon">🎴</span>
-                    <span className="log-message">{update}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      
-      {/* Active Events Display - Above Index Cards */}
-      {activeEvents.filter(e => e.status !== 'resolved').length > 0 && (
-        <div className="active-events-section">
-          <div className="events-header">🎪 Active Events</div>
-          <div className="events-list">
-            {activeEvents.filter(e => e.status !== 'resolved').map((event, index) => {
-              // Calculate effect summary for display
-              const initialEffects = event.effects.map(eff => {
-                const sign = eff.priceChange >= 0 ? '+' : '';
-                return `${eff.indexName} ${sign}${eff.priceChange}`;
-              }).join(', ');
+      <ActiveEvents activeEvents={activeEvents} />
 
-              let conditionalInfo = '';
-              if (event.conditionalEffects) {
-                const condEffects = event.conditionalEffects.effects.map(eff => {
-                  const sign = eff.priceChange >= 0 ? '+' : '';
-                  return `${eff.indexName} ${sign}${eff.priceChange}`;
-                }).join(', ');
-                
-                let probability = '';
-                if (event.conditionalEffects.probability !== null) {
-                  probability = `${Math.round(event.conditionalEffects.probability * 100)}%`;
-                } else if (event.conditionalEffects.dieRoll) {
-                  const dr = event.conditionalEffects.dieRoll;
-                  const total = dr.max - dr.min + 1;
-                  const successCount = dr.success.length;
-                  probability = `${successCount}/${total} (${Math.round(successCount/total*100)}%)`;
-                }
-                
-                conditionalInfo = ` | Next ${event.conditionalEffects.timing}: ${condEffects} (${probability})`;
-              }
-
-              return (
-                <div key={index} className="event-card">
-                  <div className="event-name">{event.name}</div>
-                  <div className="event-description">{event.description}</div>
-                  <div className="event-effects">
-                    📊 Effects: {initialEffects}
-                    {conditionalInfo}
-                  </div>
-                  <div className="event-status">
-                    Status: {event.status.toUpperCase()}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* pass stocks and indexes to Shares so it can render stockcards and index prices */}
-      <Shares styleCardSize={styleCardSize} styles={emptyStyles} stocks={stocks} indexes={indexes} activeEvents={activeEvents} />
+      <Shares
+        styleCardSize={styleCardSize}
+        styles={emptyStyles}
+        stocks={stocks}
+        indexes={indexes}
+        activeEvents={activeEvents}
+        visualEffects={visualEffects}
+      />
 
       <PlayerHand
         playerCards={playerCards}
@@ -322,18 +226,9 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
         nextButtonRef={nextButton}
       />
 
-      {/* Blurred overlay while snackbar is open */}
-      {snackbar.open && <div className="overlay" />}
-
-      {/* Snackbar for modern non-blocking messages */}
-      <Snackbar
-        anchorOrigin={{ vertical: "center", horizontal: "center" }}
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={handleSnackbarClose}
-        message={<span className="snackbar-message">{snackbar.message}</span>}
-        ContentProps={{ className: "snackbar-content" }}
-        className="snackbar-fixed"
+      <MessageOverlay
+        snackbar={snackbar}
+        handleSnackbarClose={handleSnackbarClose}
       />
     </div>
   );

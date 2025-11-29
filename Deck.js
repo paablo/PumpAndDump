@@ -4,6 +4,11 @@ class Deck {
     this.shuffle();
   }
 
+  // Getter for cards to maintain compatibility
+  get cards() {
+    return this.deck;
+  }
+
   reset() {
     this.deck = [];
   }

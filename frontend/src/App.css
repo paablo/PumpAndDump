@@ -989,19 +989,18 @@ ul {
 
 /* Snackbar styles */
 .snackbar-content {
-  padding: 18px 28px;
+  padding: 20px 32px;
   min-width: 420px;
-  max-width: 90vw;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  background: rgba(0, 0, 0, 0.85);
+  max-width: 600px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.92);
   color: #fff;
 }
 
 .snackbar-message {
-  font-size: 1.15rem;
-  line-height: 1.2;
-  text-align: center;
+  font-size: 1.05rem;
+  line-height: 1.5;
   color: #fff;
   width: 100%;
   display: block;

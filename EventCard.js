@@ -1,4 +1,5 @@
 const Card = require('./Card');
+const EventData = require('./EventData');
 
 class EventCard extends Card {
   constructor({ 
@@ -43,6 +44,10 @@ class EventCard extends Card {
     // "active" -> initial effects applied, waiting for conditional effects
     // "resolved" -> all effects completed, can be discarded
     this.status = "pending";
+
+    // roundsActive: tracks how many rounds this bubble has been accumulating
+    // Used for bubbles that grow each round
+    this.roundsActive = 0;
   }
 
   _validateEffects(effects) {
@@ -262,13 +267,14 @@ class EventCard extends Card {
       effects: this.effects,
       conditionalEffects: this.conditionalEffects,
       discardOnConditionalTrigger: this.discardOnConditionalTrigger,
-      status: this.status
+      status: this.status,
+      roundsActive: this.roundsActive
     };
   }
 
   // Factory method to create a deck of event cards
   static createDeck() {
-    const src = DEFAULT_EVENT_DATA;
+    const src = EventData.getAllEvents();
     if (!Array.isArray(src)) {
       throw new Error('createDeck expects an array of event spec objects');
     }
@@ -280,129 +286,6 @@ class EventCard extends Card {
     });
   }
 }
-
-// Default event deck data
-const DEFAULT_EVENT_DATA = [
-  {
-    name: "Tech Bubble",
-    description: "Tech sector soars on speculation, but bubble may burst!",
-    timing: "start",
-    effects: [
-      { indexName: "tech", priceChange: 3 }
-    ],
-    conditionalEffects: {
-      timing: "end",
-      dieRoll: { min: 1, max: 6, success: [1, 2, 3] }, // 50% chance (3 out of 6)
-      effects: [
-        { indexName: "tech", priceChange: -5 }
-      ]
-    },
-    discardOnConditionalTrigger: true
-  },
-  {
-    name: "Tech Boom",
-    description: "Innovation drives technology sector to new heights",
-    timing: "start",
-    effects: [
-      { indexName: "tech", priceChange: 3 }
-    ]
-  },
-  {
-    name: "Financial Crisis",
-    description: "Market panic spreads across financial institutions",
-    timing: "end",
-    effects: [
-      { indexName: "finance", priceChange: -3 }
-    ]
-  },
-  {
-    name: "Industrial Revolution 2.0",
-    description: "Manufacturing sector experiences breakthrough efficiency gains",
-    timing: "start",
-    effects: [
-      { indexName: "industrial", priceChange: 2 }
-    ]
-  },
-  {
-    name: "Healthcare Reform",
-    description: "New regulations reshape the healthcare landscape",
-    timing: "end",
-    effects: [
-      { indexName: "Health and Science", priceChange: 2 }
-    ]
-  },
-  {
-    name: "Market Correction",
-    description: "Broad market selloff affects all sectors",
-    timing: "end",
-    effects: [
-      { indexName: "tech", priceChange: -2 },
-      { indexName: "finance", priceChange: -2 },
-      { indexName: "industrial", priceChange: -2 },
-      { indexName: "Health and Science", priceChange: -2 }
-    ]
-  },
-  {
-    name: "Bull Market",
-    description: "Optimism drives gains across all sectors",
-    timing: "start",
-    effects: [
-      { indexName: "tech", priceChange: 2 },
-      { indexName: "finance", priceChange: 2 },
-      { indexName: "industrial", priceChange: 2 },
-      { indexName: "Health and Science", priceChange: 2 }
-    ]
-  },
-  {
-    name: "Tech-Finance Alliance",
-    description: "Fintech revolution benefits both tech and finance sectors",
-    timing: "start",
-    effects: [
-      { indexName: "tech", priceChange: 2 },
-      { indexName: "finance", priceChange: 2 }
-    ]
-  },
-  {
-    name: "Supply Chain Disruption",
-    description: "Global logistics problems hit industrial production hard",
-    timing: "end",
-    effects: [
-      { indexName: "industrial", priceChange: -3 }
-    ]
-  },
-  {
-    name: "Pharmaceutical Breakthrough",
-    description: "Medical breakthrough boosts health sector, pending FDA approval",
-    timing: "start",
-    effects: [
-      { indexName: "Health and Science", priceChange: 4 }
-    ],
-    conditionalEffects: {
-      timing: "end",
-      probability: 0.33, // 33% chance FDA rejects
-      effects: [
-        { indexName: "Health and Science", priceChange: -6 }
-      ]
-    },
-    discardOnConditionalTrigger: true
-  },
-  {
-    name: "Crypto Mania",
-    description: "Digital currency frenzy drives finance sector. Volatility ahead!",
-    timing: "start",
-    effects: [
-      { indexName: "finance", priceChange: 3 }
-    ],
-    conditionalEffects: {
-      timing: "end",
-      dieRoll: { min: 1, max: 6, success: [1] }, // 1 in 6 chance of crash
-      effects: [
-        { indexName: "finance", priceChange: -7 }
-      ]
-    },
-    discardOnConditionalTrigger: true
-  }
-];
 
 module.exports = EventCard;
 

@@ -3,24 +3,19 @@ import React from "react";
 const fmtPrice = (p) =>
   typeof p === "number" ? `💲 ${Math.round(p).toLocaleString()}` : p ?? "-";
 
-const IndexCardView = ({ ix, styleCardSize, activeEvents = [] }) => {
+const IndexCardView = ({ ix, styleCardSize, activeEvents = [], visualEffects = [] }) => {
   // Use emoji from backend if available, fallback to default chart emoji
   const emoji = ix?.emoji || "📈";
   
-  // Calculate net effect from active events (exclude resolved events)
+  // Calculate net effect from visual effects (includes active events + recent bubble pops)
+  // This shows the combined effect of bubble pops and new events in the same round
   let netEffect = 0;
-  if (ix && activeEvents.length > 0) {
-    activeEvents
-      .filter(event => event.status !== 'resolved')
-      .forEach(event => {
-        if (event.effects && Array.isArray(event.effects)) {
-          event.effects.forEach(effect => {
-            if (effect.indexName === ix.name) {
-              netEffect += effect.priceChange || 0;
-            }
-          });
-        }
-      });
+  if (ix && visualEffects.length > 0) {
+    visualEffects.forEach(effect => {
+      if (effect.indexName === ix.name) {
+        netEffect += effect.priceChange || 0;
+      }
+    });
   }
   
   // Format price with indicator on same line

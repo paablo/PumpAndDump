@@ -2,13 +2,13 @@ import React from "react";
 import StockCardView from "./StockCardView";
 import Indexes from "./Indexes";
 
-const Shares = ({ styleCardSize, styles, stocks = [], indexes = [], activeEvents = [] }) => {
+const Shares = ({ styleCardSize, styles, stocks = [], indexes = [], activeEvents = [], visualEffects = [] }) => {
 
 
   return (
     <div className="shares" style={styles.shares}>
       {/* Indexes rendered via new component */}
-      <Indexes indexes={indexes} styleCardSize={styleCardSize} styles={styles} activeEvents={activeEvents} />
+      <Indexes indexes={indexes} styleCardSize={styleCardSize} styles={styles} activeEvents={activeEvents} visualEffects={visualEffects} />
 
       {/* Stock cards below the indexes */}
       <div className="playerCards" style={{ ...styles.cards, marginTop: 8 }}>

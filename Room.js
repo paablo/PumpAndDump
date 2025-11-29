@@ -1,8 +1,9 @@
 const Deck = require("./Deck");
 const PlayingCard = require("./PlayingCard");
-const StockCard = require("./StockCard");
 const IndexCard = require("./IndexCard");
-const EventCard = require("./EventCard");
+const EventManager = require("./EventManager");
+const StockManager = require("./StockManager");
+const GameLogger = require("./GameLogger");
 
 class Room {
 	constructor(name) {
@@ -13,13 +14,12 @@ class Room {
 		this.playerCash = {};
 		this.deck = null;
 		this._turn = 0;
-		this.stockDeck = [];
-		// new: track 4 market indexes in addition to stock cards
 		this.indexes = [];
-		// event system
-		this.eventDeck = null;
-		this.activeEvents = []; // Events currently in play
-		this.gameLog = []; // Log of important game events
+		
+		// Use manager classes
+		this.eventManager = new EventManager();
+		this.stockManager = new StockManager();
+		this.logger = new GameLogger();
 	}
 
 	addPlayer(name) {
@@ -37,60 +37,53 @@ class Room {
 
 	startGame(io) {
 		this.start = true;
-		var playingCardDeck = PlayingCard.createDeck();
+		
+		// Initialize decks
+		const playingCardDeck = PlayingCard.createDeck();
 		this.deck = new Deck(playingCardDeck);
-		var stockDeck = StockCard.createDeck();
-		this.stockDeck = new Deck(stockDeck);
-
-		// generate 4 market indexes using IndexCard factory
+		this.stockManager.initialize();
+		this.eventManager.initialize();
+		
+		// Generate indexes
 		this.indexes = IndexCard.createIndexes();
-
-		// generate event deck
-		var eventCards = EventCard.createDeck();
-		this.eventDeck = new Deck(eventCards);
-		this.activeEvents = [];
-		this.gameLog = [];
-		this.addToGameLog(`Game started with ${this.names.length} players`);
+		
+		// Initialize logging
+		this.logger.addToGameLog(`Game started with ${this.names.length} players`);
 
 		const roomSet = io.sockets.adapter.rooms.get(this.name);
 		if (!roomSet) return;
 
-		const stocks = this.dealStocks();
+		const stocks = this.stockManager.dealStocks();
 
+		// Send initial state to all players
 		for (const playerSocketId of roomSet) {
-			const card1 = this.deck.deal();
-			const card2 = this.deck.deal();
-			const card3 = this.deck.deal();
-			const card4 = this.deck.deal();
-			const cards = [card1, card2, card3, card4];
+			const cards = [];
 			console.log("Stocks:", JSON.stringify(stocks));
 			console.log("Indexes:", JSON.stringify(this.indexes));
-			const playerNames = this.names;
+			console.log("Active Events:", JSON.stringify(this.eventManager.activeEvents));
+			
 			io.to(playerSocketId).emit("start_variables", {
 				cards,
-				playerNames,
-				playerCash: this.playerCash, // Send all players' cash
+				playerNames: this.names,
+				playerCash: this.playerCash,
 				stocks,
-				// new: include indexes payload (frontend can read this)
 				indexes: this.indexes,
-				activeEvents: this.activeEvents.map(e => e.toJSON()),
-				gameLog: this.gameLog
+				activeEvents: this.eventManager.getActiveEventsJSON(),
+				gameLog: this.logger.gameLog
 			});
 		}
+		
 		io.in(this.name).emit("cash_update", this.playerCash);
 
+		// Start first turn
 		this._turn = 0;
 		const current_room = Array.from(roomSet);
-		io.in(this.name).emit(
-			"your_turn",
-			io.sockets.sockets.get(current_room[0]).nickname
-		);
+		io.in(this.name).emit("your_turn", io.sockets.sockets.get(current_room[0]).nickname);
 	}
 
 	endGame(io, enderName) {
 		this.start = false;
 		io.in(this.name).emit("end_game", `${enderName} has ended the game!`);
-		// cleanup (if needed) is left to the caller that manages Room instances
 	}
 
 	advanceTurn(io) {
@@ -98,217 +91,138 @@ class Room {
 		if (!roomSet || roomSet.size === 0) return;
 		const roomSize = roomSet.size;
 
-		// advance turn and detect wrap-around
+		// Advance turn and detect wrap-around
 		this._turn = (this._turn + 1) % roomSize;
 		const current_room = Array.from(roomSet);
-		io.in(this.name).emit(
-			"your_turn",
-			io.sockets.sockets.get(current_room[this._turn]).nickname
-		);
+		io.in(this.name).emit("your_turn", io.sockets.sockets.get(current_room[this._turn]).nickname);
+		
 		console.log("Turn", this._turn);
 		console.log("Roomset", roomSet);
 
-		// If we've wrapped to player 0, every player has had one turn -> increment round and deal new stocks
+		// End of round processing
 		if (this._turn === 0) {
-			// END OF ROUND PROCESSING
-
-			// 1. Process end-of-round conditional effects for active events
-			this.processConditionalEvents("end", io);
-
-			// 2. Draw and activate a new event
-			this.drawAndActivateEvent(io);
-
-			// 3. Process start-of-next-round events
-			this.processConditionalEvents("start", io);
-
-			// 4. Increment round
-			this.roundNumber++;
-			io.in(this.name).emit("round_update", this.roundNumber);
-
-			// 5. Deal new stock cards for the room
-			const stocks = this.dealStocks();
-
-			// 6. Broadcast updates to all players
-			io.in(this.name).emit("stocks_update", { 
-				stocks, 
-				indexes: this.indexes,
-				activeEvents: this.activeEvents.map(e => e.toJSON()),
-				gameLog: this.gameLog.slice(-10) // Send last 10 log entries
-			});
-			console.log("Dealt new stocks:", JSON.stringify(stocks));
-
-			// 7. Send round summary message
-			this.sendRoundSummary(io);
+			this._processEndOfRound(io);
 		}
 	}
 
-	// Get all stocks for a specific index/sector
-	getStocksForIndex(indexName) {
-		if (!this.stockDeck || !this.stockDeck.cards) return [];
-		return this.stockDeck.cards.filter(stock => stock.industrySector === indexName);
+	_processEndOfRound(io) {
+		// 1. Clean up resolved start-timing events and clear previous round's pop effects
+		const removedCount = this.eventManager.cleanupResolvedStartEvents();
+		if (removedCount > 0) {
+			this.logger.addToGameLog(`✓ ${removedCount} event(s) completed`);
+			console.log(`Cleaned up ${removedCount} resolved start-timing event(s)`);
+		}
+
+		// 2. Process end-of-round conditional effects (check if bubbles pop)
+		const endRoundRolls = this.eventManager.processConditionalEvents("end", this.indexes);
+		this._logConditionalResults(endRoundRolls, io);
+
+		// 3. Re-apply bubble effects for accumulation (bubbles grow each round)
+		const bubbleGrowthResults = this.eventManager.reapplyBubbleEffects(this.indexes);
+		bubbleGrowthResults.forEach(({ event, results }) => {
+			if (results.length > 0) {
+				this.logger.logEventEffects(event, results, "Bubble Growth");
+				this.logger.addToGameLog(`📈 ${event.name} continues (Round ${event.roundsActive})`);
+			}
+		});
+
+		// 4. Draw and activate new event
+		const drawResult = this.eventManager.drawAndActivateEvent(this.indexes);
+		const newEvent = drawResult ? drawResult.event : null;
+		
+		if (newEvent) {
+			this.logger.addToGameLog(`📰 Event: ${newEvent.name} - ${newEvent.description}`);
+			
+			if (drawResult.results.length > 0) {
+				this.logger.logEventEffects(newEvent, drawResult.results, "Initial");
+			}
+			
+			io.in(this.name).emit("event_played", {
+				event: newEvent.toJSON(),
+				indexes: this.indexes
+			});
+		}
+
+		// 5. Process start-of-next-round events
+		const startRoundRolls = this.eventManager.processConditionalEvents("start", this.indexes);
+		this._logConditionalResults(startRoundRolls, io);
+
+		// 6. Increment round
+		this.roundNumber++;
+		this.logger.setRoundNumber(this.roundNumber);
+		io.in(this.name).emit("round_update", this.roundNumber);
+
+		// 7. Deal new stock cards
+		const stocks = this.stockManager.dealStocks();
+
+		// 8. Broadcast updates
+		io.in(this.name).emit("stocks_update", { 
+			stocks, 
+			indexes: this.indexes,
+			activeEvents: this.eventManager.getActiveEventsJSON(),
+			visualEffects: this.eventManager.getVisualEffects(),
+			gameLog: this.logger.getRecentLog(10)
+		});
+		console.log("Dealt new stocks:", JSON.stringify(stocks));
+
+		// 9. Send round summary message
+		this._sendRoundSummary(io, newEvent, endRoundRolls);
 	}
 
-	// Get the index for a specific stock
+	_logConditionalResults(rollResults, io = null) {
+		rollResults.forEach(rollResult => {
+			if (rollResult.triggered) {
+				// Bubble popped - log the crash and discard
+				this.logger.logEventEffects(rollResult.event, rollResult.results, "Bubble Pop", rollResult.roll);
+				this.logger.addToGameLog(`💥 ${rollResult.event.name} popped! (discarded)`);
+				
+				// Emit notification if io provided
+				if (io) {
+					io.in(this.name).emit("event_triggered", {
+						event: rollResult.event.toJSON(),
+						roll: rollResult.roll,
+						results: rollResult.results,
+						indexes: this.indexes
+					});
+				}
+			} else {
+				// Bubble held - stays active for next round
+				this.logger.addToGameLog(`✓ ${rollResult.event.name} held (remains active)`);
+			}
+		});
+	}
+
+	_sendRoundSummary(io, newlyDrawnEvent, endRoundRolls) {
+		const summaryMessage = this.logger.buildRoundSummary(
+			this.roundNumber,
+			newlyDrawnEvent,
+			endRoundRolls,
+			this.eventManager.activeEvents
+		);
+
+		io.in(this.name).emit("round_message", {
+			round: this.roundNumber,
+			message: summaryMessage,
+			indexes: this.indexes,
+			activeEvents: this.eventManager.getActiveEventsJSON(),
+			recentLog: this.logger.getRecentLog(5)
+		});
+
+		this.logger.addToGameLog(`Round ${this.roundNumber} started`);
+	}
+
+	// Utility methods for external use
+	getStocksForIndex(indexName) {
+		return this.stockManager.getStocksForIndex(indexName);
+	}
+
 	getIndexForStock(stock) {
 		if (!stock || !this.indexes) return null;
 		return this.indexes.find(idx => idx.name === stock.industrySector);
 	}
 
-	// Update index prices based on stock activity (can be called when stocks are traded)
 	updateIndexPrices() {
-		if (!this.indexes || !this.stockDeck) return;
-		
-		this.indexes.forEach(index => {
-			const relatedStocks = index.getRelatedStocks(this.stockDeck.cards);
-			if (relatedStocks.length > 0) {
-				// Calculate new price based on sector performance
-				const performance = index.getSectorPerformance(this.stockDeck.cards);
-				// Gradually adjust index price towards sector performance
-				const adjustment = Math.sign(performance - index.price);
-				index.updatePrice(adjustment);
-			}
-		});
-	}
-
-	dealStocks(count = 3) {
-		// ensure there are enough stock cards; reset/shuffle if low
-		if (!this.stockDeck || typeof this.stockDeck.length !== "function" || this.stockDeck.length() < count) {
-			if (this.stockDeck && typeof this.stockDeck.reset === "function") this.stockDeck.reset();
-			if (this.stockDeck && typeof this.stockDeck.shuffle === "function") this.stockDeck.shuffle();
-		}
-
-		// deal N stock cards for the room
-		const stocks = [];
-		for (let i = 0; i < count; i++) {
-			stocks.push(this.stockDeck.deal());
-		}
-		return stocks;
-	}
-
-	// Draw a new event and apply its initial effects
-	drawAndActivateEvent(io) {
-		if (!this.eventDeck || this.eventDeck.length() === 0) {
-			// Reshuffle event deck if empty
-			const eventCards = EventCard.createDeck();
-			this.eventDeck = new Deck(eventCards);
-		}
-
-		const event = this.eventDeck.deal();
-		if (!event) return;
-
-		// Add to active events
-		this.activeEvents.push(event);
-
-		// Apply initial effects if timing is "start"
-		if (event.timing === "start") {
-			const results = event.applyEffects(this.indexes);
-			this.logEventEffects(event, results, "Initial");
-		}
-
-		// Log the event
-		this.addToGameLog(`📰 Event: ${event.name} - ${event.description}`);
-
-		// Emit event notification to all players
-		io.in(this.name).emit("event_played", {
-			event: event.toJSON(),
-			indexes: this.indexes
-		});
-	}
-
-	// Process conditional effects for events based on timing
-	processConditionalEvents(timing, io) {
-		const eventsToRemove = [];
-
-		for (let i = 0; i < this.activeEvents.length; i++) {
-			const event = this.activeEvents[i];
-			
-			// Check if event has conditional effects with matching timing
-			if (event.conditionalEffects && event.conditionalEffects.timing === timing) {
-				const result = event.applyConditionalEffects(this.indexes);
-				
-				if (result.triggered) {
-					// Log the conditional effect
-					this.logEventEffects(event, result.results, "Conditional", result.roll);
-					
-					// Emit notification
-					io.in(this.name).emit("event_triggered", {
-						event: event.toJSON(),
-						roll: result.roll,
-						results: result.results,
-						indexes: this.indexes
-					});
-
-					// Check if event should be discarded
-					if (event.shouldDiscard()) {
-						eventsToRemove.push(i);
-						this.addToGameLog(`🗑️ Event discarded: ${event.name}`);
-					}
-				}
-			}
-
-			// Also apply non-conditional events with matching timing
-			if (event.timing === timing && event.status === "pending") {
-				const results = event.applyEffects(this.indexes);
-				this.logEventEffects(event, results, "Applied");
-			}
-		}
-
-		// Remove discarded events (iterate backwards to avoid index issues)
-		for (let i = eventsToRemove.length - 1; i >= 0; i--) {
-			this.activeEvents.splice(eventsToRemove[i], 1);
-		}
-	}
-
-	// Log event effects to game log
-	logEventEffects(event, results, effectType = "Effect", roll = null) {
-		const changes = results.map(r => {
-			if (r.error) return `${r.indexName}: ERROR`;
-			const sign = r.priceChange >= 0 ? '+' : '';
-			return `${r.indexName} ${sign}${r.priceChange} (${r.oldPrice}→${r.newPrice})`;
-		}).join(', ');
-
-		let logMessage = `📊 ${effectType} - ${event.name}: ${changes}`;
-		if (roll !== null) {
-			logMessage += ` [Roll: ${roll}]`;
-		}
-
-		this.addToGameLog(logMessage);
-	}
-
-	// Add entry to game log with timestamp
-	addToGameLog(message) {
-		this.gameLog.push({
-			round: this.roundNumber,
-			timestamp: new Date().toISOString(),
-			message
-		});
-		console.log(`[Round ${this.roundNumber}] ${message}`);
-	}
-
-	// Send round summary to all players
-	sendRoundSummary(io) {
-		// Build summary message - exclude resolved events
-		const nonResolvedEvents = this.activeEvents.filter(e => e.status !== 'resolved');
-		
-		let summaryMessage = `🎲 Round ${this.roundNumber} begins!`;
-		
-		if (nonResolvedEvents.length > 0) {
-			summaryMessage += `\n🎪 Active Events:`;
-			nonResolvedEvents.forEach(event => {
-				summaryMessage += `\n  • ${event.name}`;
-			});
-		}
-
-		// Emit round message
-		io.in(this.name).emit("round_message", {
-			round: this.roundNumber,
-			message: summaryMessage,
-			indexes: this.indexes,
-			activeEvents: this.activeEvents.map(e => e.toJSON()),
-			recentLog: this.gameLog.slice(-5) // Last 5 log entries
-		});
-
-		this.addToGameLog(`Round ${this.roundNumber} started`);
+		this.stockManager.updateIndexPrices(this.indexes);
 	}
 }
 
