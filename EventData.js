@@ -1,108 +1,127 @@
 /**
  * EventData - Contains all event definitions for the game
- * Separated from EventCard class for better data management
+ * Based on real market events with subtle nods to economic theory
  */
 
 class EventData {
 	/**
 	 * Get all bubble events (events with conditional end-round effects)
-	 * Bubbles apply +X at start, then at end of round:
-	 *   - If bubble pops: apply -X to cancel the gain, discard event
-	 *   - If bubble holds: keep event active (maintains visual indicator)
 	 */
 	static getBubbleEvents() {
 		return [
 			{
-				name: "Tech Bubble",
-				description: "Tech sector soars on speculation, but bubble may burst!",
+				name: "Tech Sector Euphoria",
+				description: "Tech stocks surge. Investors exhibit notably spirited behavior.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: 3 }
 				],
 				conditionalEffects: {
 					timing: "end",
-					dieRoll: { min: 1, max: 6, success: [1, 2, 3] }, // 50% chance to pop
+					dieRoll: { min: 1, max: 6, success: [1, 2] },
 					effects: [
-						{ indexName: "tech", priceChange: -3 } // Cancels initial +3
+						{ indexName: "tech", priceChange: -5 }
 					]
 				},
-				discardOnConditionalTrigger: true // Only discard if pops
+				discardOnConditionalTrigger: true
 			},
 			{
-				name: "Crypto Bubble",
-				description: "Digital currency frenzy drives finance sector. Volatility ahead!",
+				name: "Crypto Mania",
+				description: "Digital currency fever grips markets. Price discovery remains ongoing.",
 				timing: "start",
 				effects: [
 					{ indexName: "finance", priceChange: 3 }
 				],
 				conditionalEffects: {
 					timing: "end",
-					dieRoll: { min: 1, max: 6, success: [1, 2] }, // 33% chance to pop
+					dieRoll: { min: 1, max: 6, success: [1, 2] },
 					effects: [
-						{ indexName: "finance", priceChange: -3 } // Cancels initial +3
+						{ indexName: "finance", priceChange: -5 }
 					]
 				},
-				discardOnConditionalTrigger: true // Only discard if pops
+				discardOnConditionalTrigger: true
 			},
 			{
-				name: "Biotech Bubble",
-				description: "Medical breakthrough boosts health sector, but risks remain",
+				name: "Biotech Boom",
+				description: "Clinical trials show promise. Market enthusiasm becomes somewhat elastic.",
 				timing: "start",
 				effects: [
 					{ indexName: "Health and Science", priceChange: 3 }
 				],
 				conditionalEffects: {
 					timing: "end",
-					dieRoll: { min: 1, max: 6, success: [1, 2] }, // 33% chance to pop
+					dieRoll: { min: 1, max: 6, success: [1, 2] },
 					effects: [
-						{ indexName: "Health and Science", priceChange: -3 } // Cancels initial +3
+						{ indexName: "Health and Science", priceChange: -5 }
 					]
 				},
-				discardOnConditionalTrigger: true // Only discard if pops
+				discardOnConditionalTrigger: true
 			},
 			{
-				name: "Industrial Bubble",
-				description: "Manufacturing hype drives industrial sector to unsustainable heights",
+				name: "Real Estate Frenzy",
+				description: "Property values soar. Markets coordinate on optimistic equilibrium.",
 				timing: "start",
 				effects: [
 					{ indexName: "industrial", priceChange: 3 }
 				],
 				conditionalEffects: {
 					timing: "end",
-					dieRoll: { min: 1, max: 6, success: [1] }, // 17% chance to pop
+					dieRoll: { min: 1, max: 6, success: [1] },
 					effects: [
-						{ indexName: "industrial", priceChange: -3 } // Cancels initial +3
+						{ indexName: "industrial", priceChange: -5 }
 					]
 				},
-				discardOnConditionalTrigger: true // Only discard if pops
+				discardOnConditionalTrigger: true
+			},
+			{
+				name: "Red Scare",
+				description: "Economists discover growth and resources are not infinite. Anti-capitalist ideology emerges and investors slowly withdraw from the market.",
+				timing: "start",
+				effects: [
+						{ indexName: "tech", priceChange: -2 },
+						{ indexName: "finance", priceChange: -2 },
+						{ indexName: "industrial", priceChange: -2 },
+						{ indexName: "Health and Science", priceChange: -2 }
+				],
+				conditionalEffects: {
+					timing: "end",
+					dieRoll: { min: 1, max: 6, success: [1] },
+					effects: [
+						{ indexName: "tech", priceChange: 5 },
+						{ indexName: "finance", priceChange: 5 },
+						{ indexName: "industrial", priceChange: 5 },
+						{ indexName: "Health and Science", priceChange: 5 }
+					]
+				},
+				discardOnConditionalTrigger: true
 			}
 		];
 	}
 
 	/**
-	 * Get all regular events (simple start-timing events)
+	 * Get all regular events
 	 */
 	static getRegularEvents() {
 		return [
 			{
-				name: "Tech Boom",
-				description: "Innovation drives technology sector to new heights",
+				name: "AI Breakthrough",
+				description: "Major advancement in machine learning. Labor substitution accelerates.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: 3 }
 				]
 			},
 			{
-				name: "Financial Crisis",
-				description: "Market panic spreads across financial institutions",
+				name: "Regional Banking Crisis",
+				description: "Bank failures spread. Risk was apparently not fully priced in.",
 				timing: "start",
 				effects: [
 					{ indexName: "finance", priceChange: -3 }
 				]
 			},
 			{
-				name: "Industrial Revolution 2.0",
-				description: "Manufacturing sector experiences breakthrough efficiency gains",
+				name: "Automation Surge",
+				description: "Manufacturing robotics adoption accelerates. Factor substitution intensifies.",
 				timing: "start",
 				effects: [
 					{ indexName: "industrial", priceChange: 2 }
@@ -110,7 +129,7 @@ class EventData {
 			},
 			{
 				name: "Healthcare Reform",
-				description: "New regulations reshape the healthcare landscape",
+				description: "New healthcare legislation passes. Incidence remains to be determined.",
 				timing: "start",
 				effects: [
 					{ indexName: "Health and Science", priceChange: 2 }
@@ -118,7 +137,7 @@ class EventData {
 			},
 			{
 				name: "Market Correction",
-				description: "Broad market selloff affects all sectors",
+				description: "Broad selloff across sectors. Returns revert to something or other.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: -2 },
@@ -128,8 +147,8 @@ class EventData {
 				]
 			},
 			{
-				name: "Bull Market",
-				description: "Optimism drives gains across all sectors",
+				name: "Monetary Stimulus",
+				description: "Central bank cuts rates aggressively. Liquidity preference addressed.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: 2 },
@@ -139,8 +158,8 @@ class EventData {
 				]
 			},
 			{
-				name: "Tech-Finance Alliance",
-				description: "Fintech revolution benefits both tech and finance sectors",
+				name: "Fintech Expansion",
+				description: "Digital payment platforms gain traction. Transaction costs declining.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: 2 },
@@ -149,42 +168,141 @@ class EventData {
 			},
 			{
 				name: "Supply Chain Disruption",
-				description: "Global logistics problems hit industrial production hard",
+				description: "Global logistics breakdown. Inventory strategies reconsidered.",
 				timing: "start",
 				effects: [
 					{ indexName: "industrial", priceChange: -3 }
 				]
 			},
 			{
-				name: "Pharmaceutical Breakthrough",
-				description: "Major medical advance sends health sector soaring",
+				name: "mRNA Breakthrough",
+				description: "Revolutionary vaccine platform validated. Spillover effects substantial.",
 				timing: "start",
 				effects: [
 					{ indexName: "Health and Science", priceChange: 3 }
 				]
 			},
 			{
-				name: "AI Revolution",
-				description: "Artificial intelligence breakthroughs transform tech landscape",
+				name: "Machine Learning Advance",
+				description: "Neural networks reach new milestone. Returns to scale look interesting.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: 2 }
 				]
 			},
 			{
-				name: "Banking Stability",
-				description: "Strong earnings reports boost financial sector confidence",
+				name: "Bank Earnings Beat",
+				description: "Major banks report strong results. Apparently still systemic though.",
 				timing: "start",
 				effects: [
 					{ indexName: "finance", priceChange: 2 }
 				]
 			},
 			{
-				name: "Green Energy Push",
-				description: "Environmental mandates drive industrial transformation",
+				name: "Green Energy Initiative",
+				description: "Clean energy subsidies announced. Internalizing costs, more or less.",
 				timing: "start",
 				effects: [
 					{ indexName: "industrial", priceChange: 2 }
+				]
+			},
+			{
+				name: "Data Breach",
+				description: "Massive security failure. Information asymmetry achieved accidentally.",
+				timing: "start",
+				effects: [
+					{ indexName: "tech", priceChange: -4 }
+				]
+			},
+			{
+				name: "Accounting Scandal",
+				description: "Creative bookkeeping uncovered. Principal-agent problem illustrated.",
+				timing: "start",
+				effects: [
+					{ indexName: "finance", priceChange: -3 }
+				]
+			},
+			{
+				name: "Clinical Trial Failure",
+				description: "Late-stage drug trial disappoints. Prior investments non-recoverable.",
+				timing: "start",
+				effects: [
+					{ indexName: "Health and Science", priceChange: -3 }
+				]
+			},
+			{
+				name: "Yield Curve Inverts",
+				description: "Long-term rates fall below short-term. Forward guidance noted.",
+				timing: "start",
+				effects: [
+					{ indexName: "finance", priceChange: -3 },
+					{ indexName: "industrial", priceChange: -2 }
+				]
+			},
+			{
+				name: "Tech Sector Layoffs",
+				description: "Major workforce reductions announced. Productivity per worker rises.",
+				timing: "start",
+				effects: [
+					{ indexName: "tech", priceChange: -2 }
+				]
+			},
+			{
+				name: "Pandemic Preparedness",
+				description: "Governments invest in medical infrastructure. Optimal provision debated.",
+				timing: "start",
+				effects: [
+					{ indexName: "Health and Science", priceChange: 2 }
+				]
+			},
+			{
+				name: "Antitrust Action",
+				description: "Tech giants face regulatory scrutiny. Market power questioned.",
+				timing: "start",
+				effects: [
+					{ indexName: "tech", priceChange: -3 }
+				]
+			},
+			{
+				name: "Infrastructure Package",
+				description: "Major public works spending approved. Multiplier effects anticipated.",
+				timing: "start",
+				effects: [
+					{ indexName: "industrial", priceChange: 3 }
+				]
+			},
+			{
+				name: "Credit Downgrade",
+				description: "Sovereign rating cut. Deficit financing becomes more expensive.",
+				timing: "start",
+				effects: [
+					{ indexName: "finance", priceChange: -2 }
+				]
+			},
+			{
+				name: "Trade Agreement",
+				description: "Tariffs reduced between major economies. Gains realized, theoretically.",
+				timing: "start",
+				effects: [
+					{ indexName: "industrial", priceChange: 2 },
+					{ indexName: "tech", priceChange: 1 }
+				]
+			},
+			{
+				name: "Patent Expiration",
+				description: "Major pharmaceutical patents expire. Rents dissipate as expected.",
+				timing: "start",
+				effects: [
+					{ indexName: "Health and Science", priceChange: -2 }
+				]
+			},
+			{
+				name: "Venture Capital Surge",
+				description: "Record VC investment in startups. Valuation methodology evolving.",
+				timing: "start",
+				effects: [
+					{ indexName: "tech", priceChange: 2 },
+					{ indexName: "finance", priceChange: 1 }
 				]
 			}
 		];
@@ -192,10 +310,8 @@ class EventData {
 
 	/**
 	 * Get all events (bubbles + regular events)
-	 * By default returns only bubble events (regular events commented out in original)
 	 */
 	static getAllEvents() {
-		// Currently only bubble events are active
 		var events = this.getBubbleEvents();
 		events.push(...this.getRegularEvents());
 		return events;
@@ -203,4 +319,3 @@ class EventData {
 }
 
 module.exports = EventData;
-

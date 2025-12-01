@@ -12,10 +12,10 @@ const IndexCardView = ({ ix, styleCardSize, activeEvents = [], visualEffects = [
   let netEffect = 0;
   if (ix && visualEffects.length > 0) {
     visualEffects.forEach(effect => {
-      if (effect.indexName === ix.name) {
-        netEffect += effect.priceChange || 0;
-      }
-    });
+            if (effect.indexName === ix.name) {
+              netEffect += effect.priceChange || 0;
+        }
+      });
   }
   
   // Format price with indicator on same line

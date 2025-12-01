@@ -41,8 +41,6 @@ const PlayerHand = ({
 
   return (
     <div>
-      <hr />
-      Player's cards:
       {/* use className (no spaces in id) and apply containerStyle */}
       <div className="playerCards flex-centered" style={containerStyle}>
         <div id="playercards" style={cardsContainerStyle}>

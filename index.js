@@ -130,6 +130,86 @@ io.on("connection", (socket) => {
 		}
 	});
 
+	socket.on("purchase_stock", ({ room, playerName, stock }) => {
+		try {
+			const r = rooms[room];
+			if (!r) {
+				socket.emit("purchase_result", { 
+					success: false, 
+					message: "Room not found" 
+				});
+				return;
+			}
+
+			const result = r.purchaseStock(playerName, stock);
+			
+			// Send result to requesting player
+			socket.emit("purchase_result", result);
+
+			// If successful, broadcast cash and portfolio updates to all players
+			if (result.success) {
+				io.in(room).emit("cash_update", r.playerCash);
+				io.in(room).emit("portfolio_update", {
+					playerName: playerName,
+					ownedStocks: result.ownedStocks
+				});
+				io.in(room).emit("game_log_update", r.logger.getRecentLog(10));
+				io.in(room).emit("stock_ownership_update", r.getStockOwnershipCounts());
+				io.in(room).emit("actions_update", {
+					playerName: playerName,
+					actionsRemaining: result.actionsRemaining
+				});
+				io.in(room).emit("net_worth_update", r.getAllPlayerNetWorths());
+			}
+		} catch (error) {
+			console.log(error.message);
+			socket.emit("purchase_result", { 
+				success: false, 
+				message: "Purchase failed: " + error.message 
+			});
+		}
+	});
+
+	socket.on("sell_stock", ({ room, playerName, stock }) => {
+		try {
+			const r = rooms[room];
+			if (!r) {
+				socket.emit("sell_result", { 
+					success: false, 
+					message: "Room not found" 
+				});
+				return;
+			}
+
+			const result = r.sellStock(playerName, stock);
+			
+			// Send result to requesting player
+			socket.emit("sell_result", result);
+
+			// If successful, broadcast cash and portfolio updates to all players
+			if (result.success) {
+				io.in(room).emit("cash_update", r.playerCash);
+				io.in(room).emit("portfolio_update", {
+					playerName: playerName,
+					ownedStocks: result.ownedStocks
+				});
+				io.in(room).emit("game_log_update", r.logger.getRecentLog(10));
+				io.in(room).emit("stock_ownership_update", r.getStockOwnershipCounts());
+				io.in(room).emit("actions_update", {
+					playerName: playerName,
+					actionsRemaining: result.actionsRemaining
+				});
+				io.in(room).emit("net_worth_update", r.getAllPlayerNetWorths());
+			}
+		} catch (error) {
+			console.log(error.message);
+			socket.emit("sell_result", { 
+				success: false, 
+				message: "Sale failed: " + error.message 
+			});
+		}
+	});
+
 	socket.on("disconnect", () => {
 		try {
 			console.log(`${socket.id} has disconnected`);

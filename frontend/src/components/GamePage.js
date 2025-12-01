@@ -82,6 +82,10 @@ const GamePage = ({ socket, name, room, setLoggedIn }) => {
                 <span className="badge-label">Room Code:</span>
                 <span className="badge-value">{room}</span>
               </div>
+              <div className="room-badge">
+                <span className="badge-label">Player name:</span>
+                <span className="badge-value">{name}</span>
+              </div>
             </div>
 
             {/* Players Section */}

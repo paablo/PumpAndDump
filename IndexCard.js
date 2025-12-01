@@ -70,25 +70,25 @@ class IndexCard extends Card {
     const indexData = [
       {
         name: "tech",
-        price: 5 + Math.floor(Math.random() * 6) + 1, // 6-11
+        price: 3 + Math.floor(Math.random() * 6) + 1, // 6-11
         emoji: "💻",
         description: "Technology sector index tracking innovation and digital transformation"
       },
       {
         name: "finance",
-        price: 5 + Math.floor(Math.random() * 6) + 1, // 6-11
+        price: 3 + Math.floor(Math.random() * 6) + 1, // 6-11
         emoji: "🏦",
         description: "Financial sector index tracking banks, investment firms, and lending institutions"
       },
       {
         name: "industrial",
-        price: 5 + Math.floor(Math.random() * 6) + 1, // 6-11
+        price: 3 + Math.floor(Math.random() * 6) + 1, // 6-11
         emoji: "🏭",
         description: "Industrial sector index tracking production, manufacturing and automation"
       },
       {
         name: "Health and Science",
-        price: 5 + Math.floor(Math.random() * 6) + 1, // 6-11
+        price: 3 + Math.floor(Math.random() * 6) + 1, // 6-11
         emoji: "🧬",
         description: "Health & Science sector index tracking pharmaceuticals, biotech, and medical technology"
       }
