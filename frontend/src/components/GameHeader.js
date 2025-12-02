@@ -1,4 +1,5 @@
 import React from "react";
+import { Button } from "@material-ui/core";  // Add this import
 
 const GameHeader = ({
   roundNumber,
@@ -16,8 +17,12 @@ const GameHeader = ({
   onSellStock,
   stockOwnershipCounts = {},
   indexes = [],
+  myTurn,           // Add this prop
+  endTurnHandler,   // Add this prop
+  endGame,          // Add this prop
 }) => {
   const [portfolioExpanded, setPortfolioExpanded] = React.useState(false);
+
 
   // Calculate current market price for a stock
   const getStockPrice = (stock) => {
@@ -42,53 +47,8 @@ const GameHeader = ({
 
   return (
     <div className="game-header">
-      <div className="game-info-bar">
-        <div className="round-badge">Round {roundNumber}</div>
-        <div className="players-wealth">
-          {players.map((player, idx) => (
-            <div
-              key={idx}
-              className={`player-wealth-item ${
-                player === currentTurn ? "active" : ""
-              } ${player === name ? "current-player" : ""}`}
-            >
-              <span className="player-name">
-                {player === currentTurn && "▶ "}
-                {player}
-                {player === name && " (You)"}
-                {player === name && player === currentTurn && (
-                  <span style={{
-                    marginLeft: '8px',
-                    padding: '2px 8px',
-                    backgroundColor: actionsRemaining > 0 ? 'rgba(76, 175, 80, 0.4)' : 'rgba(255, 0, 0, 0.3)',
-                    borderRadius: '10px',
-                    fontSize: '0.85rem',
-                    fontWeight: 'bold',
-                    border: `1px solid ${actionsRemaining > 0 ? 'rgba(76, 175, 80, 0.6)' : 'rgba(255, 0, 0, 0.4)'}`,
-                  }}>
-                    ⚡{actionsRemaining}
-                  </span>
-                )}
-              </span>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                <span className="player-cash">
-                  💰 ${playerCash[player] !== undefined ? playerCash[player] : 30}
-                </span>
-                <span className="player-net-worth" style={{
-                  fontSize: '0.85rem',
-                  color: '#aaa',
-                  fontStyle: 'italic'
-                }}>
-                  Net: ${playerNetWorths[player] !== undefined ? playerNetWorths[player] : 40}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Player Portfolio */}
-      {ownedStocks.length > 0 && (
+        {/* Player Portfolio */}
+        {ownedStocks.length > 0 && (
         <div className="player-portfolio" style={{
           background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)',
           borderBottom: '1px solid rgba(255, 255, 255, 0.2)'
@@ -247,6 +207,105 @@ const GameHeader = ({
           )}
         </div>
       )}
+        {/* Round Tracker */}
+      <div className="round-tracker">
+        {[1, 2, 3, 4, 5, 6].map((round) => (
+          <React.Fragment key={round}>
+            <div 
+              className={`round-pill ${roundNumber === round ? 'active' : ''} ${roundNumber > round ? 'completed' : ''}`}
+            >
+              <span className="round-number">R{round}</span>
+            </div>
+            {/* Show dividend pill after even rounds */}
+            {round % 2 === 0 && (
+              <div className={`dividend-pill ${roundNumber > round ? 'paid' : ''}`}>
+                <span style={{ fontSize: '1rem' }}>🪙</span>
+              </div>
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+      <div className="game-info-bar" style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        gap: '16px'
+      }}>
+        <div className="players-wealth" style={{ flex: 1 }}>
+          {players.map((player, idx) => (
+            <div
+              key={idx}
+              className={`player-wealth-item ${
+                player === currentTurn ? "active" : ""
+              } ${player === name ? "current-player" : ""}`}
+            >
+              <span className="player-name">
+                {player === currentTurn && "▶ "}
+                {player}
+                {player === name && " (You)"}
+                {player === name && player === currentTurn && (
+                  <span style={{
+                    marginLeft: '8px',
+                    padding: '2px 8px',
+                    backgroundColor: actionsRemaining > 0 ? 'rgba(76, 175, 80, 0.4)' : 'rgba(255, 0, 0, 0.3)',
+                    borderRadius: '10px',
+                    fontSize: '0.85rem',
+                    fontWeight: 'bold',
+                    border: `1px solid ${actionsRemaining > 0 ? 'rgba(76, 175, 80, 0.6)' : 'rgba(255, 0, 0, 0.4)'}`,
+                  }}>
+                    ⚡{actionsRemaining}
+                  </span>
+                )}
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                <span className="player-cash">
+                  💰 ${playerCash[player] !== undefined ? playerCash[player] : 30}
+                </span>
+                <span className="player-net-worth" style={{
+                  fontSize: '0.85rem',
+                  color: '#aaa',
+                  fontStyle: 'italic'
+                }}>
+                  Net: ${playerNetWorths[player] !== undefined ? playerNetWorths[player] : 40}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Action Buttons - Always Visible */}
+        <div style={{ 
+          display: 'flex', 
+          gap: '8px',
+          flexShrink: 0
+        }}>
+          <Button
+            variant="contained"
+            color="primary"
+            disabled={!myTurn}
+            onClick={endTurnHandler}
+            style={{
+              minWidth: '110px',
+              fontWeight: 'bold',
+              backgroundColor: myTurn ? '#4CAF50' : undefined,
+              boxShadow: myTurn ? '0 4px 12px rgba(76, 175, 80, 0.4)' : undefined
+            }}
+          >
+            End Turn
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={endGame}
+            style={{
+              minWidth: '110px',
+              backgroundColor: '#f44336',
+              color: 'white'
+            }}
+          >
+            End Game
+          </Button>
+        </div>
+      </div>
 
       {/* Collapsible Game Log - Integrated into banner */}
       {(updates.length > 0 || gameLog.length > 0) && (

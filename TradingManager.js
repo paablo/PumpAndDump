@@ -170,14 +170,13 @@ class TradingManager {
 	 * Update board stocks at end of round: keep purchased, remove unpurchased, add new
 	 */
 	updateBoardStocks(stockManager, maxStocks = 6, newStocksToDeal = 2) {
-		// Keep stocks that were purchased
 		const keptStocks = this.currentBoardStocks.filter(stock => 
-			this.stocksPurchasedThisRound.has(stock.name)
+			this.playerManager.getStockOwnershipCount(stock.name) > 0
 		);
-
+	
 		// Track removed stocks
 		const removedStocks = this.currentBoardStocks.filter(stock => 
-			!this.stocksPurchasedThisRound.has(stock.name)
+			this.playerManager.getStockOwnershipCount(stock.name) === 0
 		);
 
 		// Mark kept stocks as "carryover"

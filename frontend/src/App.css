@@ -549,6 +549,10 @@
   .lobby-actions {
     flex-direction: column;
   }
+  
+  .events-and-indexes-combined {
+    flex-wrap: wrap;
+  }
 }
 
 /* Gamepage Wrapper */
@@ -763,16 +767,96 @@ ul {
   padding: 10px;
 }
 
+/* Round Tracker */
+.round-tracker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+}
+
+.round-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-radius: 22px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #666;
+  transition: all 0.3s ease;
+}
+
+.round-pill.completed {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: rgba(76, 175, 80, 0.4);
+  color: #4caf50;
+}
+
+.round-pill.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transform: scale(1.15);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.7);
+  }
+}
+
+.round-number {
+  font-weight: 800;
+}
+
+.dividend-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  border: 2px solid #daa520;
+  border-radius: 16px;
+  font-weight: 700;
+  color: #856404;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+  opacity: 0.5;
+  transition: all 0.3s ease;
+}
+
+.dividend-pill.paid {
+  opacity: 1;
+  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+  border-color: #388e3c;
+  color: white;
+}
+
 /* Modern compact header */
 .game-header {
-  position: sticky;
-  top: 0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   width: 100%;
-  margin-bottom: 16px;
+  margin-top: 16px;
   padding: 10px 20px;
   background-color: #f5f5f5;
   z-index: 100;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .game-info-bar {
@@ -920,6 +1004,39 @@ ul {
   width: 100%;
 }
 
+/* Indexes container - legacy styles for compatibility */
+.indexes {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  flex: 1;
+  min-width: 0;
+}
+
+.indexes-header {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #4c0bae;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.indexes .share-cards {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Event cards in combined view */
+.events-and-indexes-combined .event-card {
+  flex-shrink: 0;
+  min-width: 250px;
+  max-width: 300px;
+}
+
 .cards {
   display: flex;
   flex-direction: row;
@@ -1050,11 +1167,9 @@ ul {
   display: flex;
   flex-direction: row;
   gap: 10px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  flex-wrap: wrap;
+  justify-content: center;
 }
-
 /* Prevent floats from breaking flex layout and keep cards from shrinking */
 .cards .card,
 .share-cards .card,
@@ -1063,14 +1178,28 @@ ul {
   flex: 0 0 auto;
 }
 
-/* Active Events Section */
+/* Events and Indexes Combined Row */
+.events-and-indexes-combined {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  margin: 20px auto;
+  max-width: 100%;
+  width: 100%;
+  padding: 0 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  align-items: flex-start;
+}
+
+/* Active Events Section (legacy - keep for compatibility) */
 .active-events-section {
   background-color: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   padding: 20px;
-  margin: 20px auto;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  max-width: 1200px;
+  flex: 1;
+  min-width: 0;
 }
 
 .events-header {

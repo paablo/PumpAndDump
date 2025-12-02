@@ -53,24 +53,6 @@ const PlayerHand = ({
             />
           ))}
         </div>
-        <div className="flex-centered-column" style={buttonsColumnStyle}>
-          <div className="button">
-            <Button
-              ref={nextButtonRef}
-              variant="contained"
-              color="primary"
-              disabled={!myTurn}
-              onClick={endTurnHandler}
-            >
-              End Turn
-            </Button>
-          </div>
-          <div className="button">
-            <Button variant="contained" onClick={endGame}>
-              End Game
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   );

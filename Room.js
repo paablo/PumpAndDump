@@ -23,7 +23,13 @@ class Room {
 		this.stockManager = new StockManager();
 		this.tradingManager = new TradingManager(this.playerManager, this.logger);
 		this.scoreManager = new ScoreManager(this.playerManager, this.tradingManager, this.logger);
-		this.roundManager = new RoundManager(this.playerManager, this.eventManager, this.tradingManager, this.logger);
+		this.roundManager = new RoundManager(
+			this.playerManager, 
+			this.eventManager, 
+			this.tradingManager, 
+			this.logger,
+			this.scoreManager  
+		);
 	}
 
 	// Delegate player management to PlayerManager
@@ -59,27 +65,28 @@ class Room {
 		this.start = true;
 		
 		// Initialize decks
-		const playingCardDeck = PlayingCard.createDeck();
-		this.deck = new Deck(playingCardDeck);
 		this.stockManager.initialize();
 		this.eventManager.initialize();
-
+	
 		// Generate indexes
 		this.indexes = IndexCard.createIndexes();
-		//console.log(`Players: ${this.names}`);
-		//this.playerManager.shufflePlayers();
-
+	
 		// Initialize logging
 		this.logger.addToGameLog(`Game started with ${this.names.length} players`);
-
+		this.logger.setRoundNumber(1);
+	
 		const roomSet = io.sockets.adapter.rooms.get(this.name);
 		if (!roomSet) return;
-
-		// Deal initial stocks
-		const initialStocks = this.stockManager.dealStocks();
-		initialStocks.forEach(stock => stock.isCarryover = false);
-		this.tradingManager.setBoardStocks(initialStocks);
-
+	
+		// Start Round 1 - deal stocks and draw first event
+		const roundResult = this.roundManager.startRound(
+			io, 
+			this.name, 
+			this.indexes, 
+			this.stockManager,
+			true  // isFirstRound = true
+		);
+	
 		// Send initial state to all players
 		for (const playerSocketId of roomSet) {
 			io.to(playerSocketId).emit("start_variables", {
@@ -87,8 +94,9 @@ class Room {
 				playerNames: this.names,
 				playerCash: this.playerCash,
 				stocks: this.tradingManager.getBoardStocks(),
-				indexes: this.indexes,
+				indexes: this.indexes,  // Already modified by event
 				activeEvents: this.eventManager.getActiveEventsJSON(),
+				visualEffects: this.eventManager.getVisualEffects(),
 				gameLog: this.logger.gameLog,
 				stockOwnershipCounts: this.playerManager.getStockOwnershipCounts()
 			});
@@ -98,6 +106,16 @@ class Room {
 			this.broadcastMessage(io.to(playerSocketId), msg);
 		}
 		
+		// Emit stocks_update to ensure frontend recalculates prices with modified indexes
+		io.in(this.name).emit("stocks_update", {
+			stocks: this.tradingManager.getBoardStocks(),
+			indexes: this.indexes,
+			activeEvents: this.eventManager.getActiveEventsJSON(),
+			visualEffects: this.eventManager.getVisualEffects(),
+			gameLog: this.logger.getRecentLog(10),
+			stockOwnershipCounts: this.playerManager.getStockOwnershipCounts()
+		});
+	
 		io.in(this.name).emit("cash_update", this.playerCash);
 		io.in(this.name).emit("net_worth_update", this.scoreManager.getAllNetWorths(this.indexes));
 		console.log(`Players: ${this.names}`);
@@ -106,9 +124,8 @@ class Room {
 		const currentPlayerName = this.names[0];
 		console.log(`Current player name: ${currentPlayerName}`);
 		io.in(this.name).emit("your_turn", currentPlayerName);
-
+	
 		console.log(`Game started in room: ${this.name}`);
-		
 	}
 
 	broadcastMessage(ioTo, msg="Hello World") {
@@ -118,61 +135,20 @@ class Room {
 	}
 
 	advanceTurn(io) {
-		/* Phases 
-		Event?
-		1. Trade 
-		2. Dividends
-		
-		Resolve event
-		4. Net worth update
-
-		*/
-		const turnResult = this.roundManager.advanceTurn(io, this.name,this.indexes, this.stockManager);
-		if (!turnResult) return;
-
-		// Send updated net worths
-		io.in(this.name).emit("net_worth_update", this.scoreManager.getAllNetWorths(this.indexes));
-
-		// End of round processing
-		if (turnResult.endOfRound) {
-			const roundResult = this.roundManager.processEndOfRound(
-				io, 
-				this.name, 
-				this.indexes, 
-				this.stockManager,
-				6 // max rounds (changed from 12 by user)
-			);
-
-			if (roundResult.gameEnded) {
-				this._endGame(io);
-				return;
-			}
-
-			// Broadcast stock updates
-			io.in(this.name).emit("stocks_update", { 
-				stocks: this.tradingManager.getBoardStocks(), 
-				indexes: this.indexes,
-				activeEvents: this.eventManager.getActiveEventsJSON(),
-				visualEffects: this.eventManager.getVisualEffects(),
-				gameLog: this.logger.getRecentLog(10),
-				stockOwnershipCounts: this.playerManager.getStockOwnershipCounts()
-			});
-
-			// Broadcast cash updates if dividends were paid
-			if (roundResult.dividendPayments.length > 0) {
-				io.in(this.name).emit("cash_update", this.playerCash);
-				io.in(this.name).emit("net_worth_update", this.scoreManager.getAllNetWorths(this.indexes));
-			}
-
-			// Send round summary
-			this.roundManager.sendRoundSummary(
-				io, 
-				this.name, 
-				this.indexes, 
-				roundResult.newEvent, 
-				roundResult.endRoundRolls, 
-				roundResult.dividendPayments
-			);
+		const result = this.roundManager.processRoundCycle(
+			io, 
+			this.name, 
+			this.indexes, 
+			this.stockManager,
+			this.scoreManager,
+			6 // max rounds
+		);
+	
+		if (!result) return;
+	
+		// Handle game end
+		if (result.gameEnded) {
+			this._endGame(io);
 		}
 	}
 

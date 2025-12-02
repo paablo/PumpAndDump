@@ -49,10 +49,12 @@ io.on("connection", (socket) => {
 			}
 			rooms[room].addPlayer(name);
 
+			// Around line 52-56
 			io.in(room).emit(
 				"player_count",
 				io.sockets.adapter.rooms.get(room).size
 			);
+			io.in(room).emit("player_names", rooms[room].names); // Add this line
 			io.in(room).emit("update", `${name} has joined room ${room}`);
 			io.in(room).emit("cash_update", rooms[room].playerCash);
 			console.log(`${name} joined room ${room}`);
@@ -70,10 +72,12 @@ io.on("connection", (socket) => {
 			if (r) {
 				io.in(room).emit("update", `${name} has left room ${room}`);
 				const roomSet = io.sockets.adapter.rooms.get(room);
+				// Around line 73-76
 				io.in(room).emit(
 					"player_count",
 					roomSet ? roomSet.size : 0
 				);
+				io.in(room).emit("player_names", r.names); // Add this line
 				r.removePlayer(name);
 				io.in(room).emit("cash_update", r.playerCash);
 				console.log(`${name} has left ${room}`);
@@ -224,10 +228,12 @@ io.on("connection", (socket) => {
 				delete rooms[socket.room];
 			} else {
 				const roomSet = io.sockets.adapter.rooms.get(socket.room);
+				// Around line 227-230
 				io.in(socket.room).emit(
 					"player_count",
 					roomSet ? roomSet.size : 0
 				);
+				io.in(socket.room).emit("player_names", r.names); // Add this line
 				r.removePlayer(socket.nickname);
 				io.in(socket.room).emit("cash_update", r.playerCash);
 				io.emit("update", `${socket.nickname} has left`);

@@ -11,7 +11,7 @@ class EventData {
 		return [
 			{
 				name: "Tech Sector Euphoria",
-				description: "Tech stocks surge. Investors exhibit notably spirited behavior.",
+				description: "Tech stocks surge as investors discover 'this time is different.' Spoiler: it isn't.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: 3 }
@@ -27,7 +27,7 @@ class EventData {
 			},
 			{
 				name: "Crypto Mania",
-				description: "Digital currency fever grips markets. Price discovery remains ongoing.",
+				description: "Everyone's cousin is now a blockchain expert. Your uncle bought $500 of DogeElonMoonCoin.",
 				timing: "start",
 				effects: [
 					{ indexName: "finance", priceChange: 3 }
@@ -43,7 +43,7 @@ class EventData {
 			},
 			{
 				name: "Biotech Boom",
-				description: "Clinical trials show promise. Market enthusiasm becomes somewhat elastic.",
+				description: "One company claims their pill cures baldness AND makes you rich. Investors buy both claims.",
 				timing: "start",
 				effects: [
 					{ indexName: "Health and Science", priceChange: 3 }
@@ -59,7 +59,7 @@ class EventData {
 			},
 			{
 				name: "Real Estate Frenzy",
-				description: "Property values soar. Markets coordinate on optimistic equilibrium.",
+				description: "A toolshed in San Francisco just sold for $2.3M. Totally normal and sustainable!",
 				timing: "start",
 				effects: [
 					{ indexName: "industrial", priceChange: 3 }
@@ -75,7 +75,7 @@ class EventData {
 			},
 			{
 				name: "Red Scare",
-				description: "Economists discover growth and resources are not infinite. Anti-capitalist ideology emerges and investors slowly withdraw from the market.",
+				description: "Economists suddenly remember that infinite growth on a finite planet is... problematic. Markets hate when math shows up uninvited.",
 				timing: "start",
 				effects: [
 						{ indexName: "tech", priceChange: -2 },
@@ -105,7 +105,7 @@ class EventData {
 		return [
 			{
 				name: "AI Breakthrough",
-				description: "Major advancement in machine learning. Labor substitution accelerates.",
+				description: "Robots get smarter. Your job gets nervous. Shareholders throw a party.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: 3 }
@@ -113,7 +113,7 @@ class EventData {
 			},
 			{
 				name: "Regional Banking Crisis",
-				description: "Bank failures spread. Risk was apparently not fully priced in.",
+				description: "Turns out investing in 'definitely not risky' bonds can be risky. Who knew?",
 				timing: "start",
 				effects: [
 					{ indexName: "finance", priceChange: -3 }
@@ -121,7 +121,7 @@ class EventData {
 			},
 			{
 				name: "Automation Surge",
-				description: "Manufacturing robotics adoption accelerates. Factor substitution intensifies.",
+				description: "Factories replace workers with robots who don't need coffee breaks or fair wages.",
 				timing: "start",
 				effects: [
 					{ indexName: "industrial", priceChange: 2 }
@@ -129,7 +129,7 @@ class EventData {
 			},
 			{
 				name: "Healthcare Reform",
-				description: "New healthcare legislation passes. Incidence remains to be determined.",
+				description: "Politicians promise to fix healthcare. Lobbyists promise they won't.",
 				timing: "start",
 				effects: [
 					{ indexName: "Health and Science", priceChange: 2 }
@@ -137,7 +137,7 @@ class EventData {
 			},
 			{
 				name: "Market Correction",
-				description: "Broad selloff across sectors. Returns revert to something or other.",
+				description: "Stocks fall. Financial advisors explain this was 'totally expected' even though they said the opposite yesterday.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: -2 },
@@ -148,7 +148,7 @@ class EventData {
 			},
 			{
 				name: "Monetary Stimulus",
-				description: "Central bank cuts rates aggressively. Liquidity preference addressed.",
+				description: "Central bank activates money printer. Economy goes brrrrr.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: 2 },
@@ -158,8 +158,19 @@ class EventData {
 				]
 			},
 			{
+				name: "Invisible Hand",
+				description: "Sometimes nobody knows that is going to happen next, but it happens anyway.",
+				timing: "start",
+				effects: [
+					{ indexName: "tech", priceChange: Math.random() * 4 - 2 },
+					{ indexName: "finance", priceChange: Math.random() * 4 - 2 },
+					{ indexName: "industrial", priceChange: Math.random() * 4 - 2 },
+					{ indexName: "Health and Science", priceChange: Math.random() * 4 - 2 }
+				]
+			},
+			{
 				name: "Fintech Expansion",
-				description: "Digital payment platforms gain traction. Transaction costs declining.",
+				description: "A new app promises to disrupt banking. It's Venmo with extra steps and VC funding.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: 2 },
@@ -168,7 +179,7 @@ class EventData {
 			},
 			{
 				name: "Supply Chain Disruption",
-				description: "Global logistics breakdown. Inventory strategies reconsidered.",
+				description: "That boat stuck in the canal? Yeah, your iPhone is on it. So is everyone else's.",
 				timing: "start",
 				effects: [
 					{ indexName: "industrial", priceChange: -3 }
@@ -176,7 +187,7 @@ class EventData {
 			},
 			{
 				name: "mRNA Breakthrough",
-				description: "Revolutionary vaccine platform validated. Spillover effects substantial.",
+				description: "Science does something amazing. Half of Twitter becomes vaccine experts overnight.",
 				timing: "start",
 				effects: [
 					{ indexName: "Health and Science", priceChange: 3 }
@@ -184,7 +195,7 @@ class EventData {
 			},
 			{
 				name: "Machine Learning Advance",
-				description: "Neural networks reach new milestone. Returns to scale look interesting.",
+				description: "AI can now write code, make art, and take your job. But it still can't fold fitted sheets.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: 2 }
@@ -192,7 +203,7 @@ class EventData {
 			},
 			{
 				name: "Bank Earnings Beat",
-				description: "Major banks report strong results. Apparently still systemic though.",
+				description: "Banks make record profits by charging you $35 for being $0.12 overdrawn. Resilient business model!",
 				timing: "start",
 				effects: [
 					{ indexName: "finance", priceChange: 2 }
@@ -200,7 +211,7 @@ class EventData {
 			},
 			{
 				name: "Green Energy Initiative",
-				description: "Clean energy subsidies announced. Internalizing costs, more or less.",
+				description: "Government finally decides to address climate change. Oil lobbyists file into conference room.",
 				timing: "start",
 				effects: [
 					{ indexName: "industrial", priceChange: 2 }
@@ -208,7 +219,7 @@ class EventData {
 			},
 			{
 				name: "Data Breach",
-				description: "Massive security failure. Information asymmetry achieved accidentally.",
+				description: "Your data was stolen. Again. Time to change that password from 'Password123' to 'Password124.'",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: -4 }
@@ -216,7 +227,7 @@ class EventData {
 			},
 			{
 				name: "Accounting Scandal",
-				description: "Creative bookkeeping uncovered. Principal-agent problem illustrated.",
+				description: "Executives creatively interpreted 'profit' as 'whatever we want it to be.'",
 				timing: "start",
 				effects: [
 					{ indexName: "finance", priceChange: -3 }
@@ -224,7 +235,7 @@ class EventData {
 			},
 			{
 				name: "Clinical Trial Failure",
-				description: "Late-stage drug trial disappoints. Prior investments non-recoverable.",
+				description: "Drug that was supposed to cure everything actually cures nothing. Investors shocked that biology is hard.",
 				timing: "start",
 				effects: [
 					{ indexName: "Health and Science", priceChange: -3 }
@@ -232,7 +243,7 @@ class EventData {
 			},
 			{
 				name: "Yield Curve Inverts",
-				description: "Long-term rates fall below short-term. Forward guidance noted.",
+				description: "The yield curve inverted. This means... something. Economists argue about what, exactly.",
 				timing: "start",
 				effects: [
 					{ indexName: "finance", priceChange: -3 },
@@ -241,7 +252,7 @@ class EventData {
 			},
 			{
 				name: "Tech Sector Layoffs",
-				description: "Major workforce reductions announced. Productivity per worker rises.",
+				description: "Tech company fires 10,000 workers to 'increase efficiency.' CEO gets $50M bonus for tough decision.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: -2 }
@@ -249,7 +260,7 @@ class EventData {
 			},
 			{
 				name: "Pandemic Preparedness",
-				description: "Governments invest in medical infrastructure. Optimal provision debated.",
+				description: "Government invests in pandemic prep after the pandemic. Better late than never...?",
 				timing: "start",
 				effects: [
 					{ indexName: "Health and Science", priceChange: 2 }
@@ -257,7 +268,7 @@ class EventData {
 			},
 			{
 				name: "Antitrust Action",
-				description: "Tech giants face regulatory scrutiny. Market power questioned.",
+				description: "Regulators finally notice that monopolies might be monopolistic. Tech CEOs schedule sad face practice.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: -3 }
@@ -265,7 +276,7 @@ class EventData {
 			},
 			{
 				name: "Infrastructure Package",
-				description: "Major public works spending approved. Multiplier effects anticipated.",
+				description: "Congress agrees to fix bridges built in 1952. Only took 70 years of debate!",
 				timing: "start",
 				effects: [
 					{ indexName: "industrial", priceChange: 3 }
@@ -273,7 +284,7 @@ class EventData {
 			},
 			{
 				name: "Credit Downgrade",
-				description: "Sovereign rating cut. Deficit financing becomes more expensive.",
+				description: "Rating agency downgrades country's credit. Same agency that rated junk bonds AAA in 2008.",
 				timing: "start",
 				effects: [
 					{ indexName: "finance", priceChange: -2 }
@@ -281,7 +292,7 @@ class EventData {
 			},
 			{
 				name: "Trade Agreement",
-				description: "Tariffs reduced between major economies. Gains realized, theoretically.",
+				description: "Countries agree to trade more freely. Economists claim everyone wins. Factory workers have questions.",
 				timing: "start",
 				effects: [
 					{ indexName: "industrial", priceChange: 2 },
@@ -290,7 +301,7 @@ class EventData {
 			},
 			{
 				name: "Patent Expiration",
-				description: "Major pharmaceutical patents expire. Rents dissipate as expected.",
+				description: "Big Pharma's $1000/pill loses patent protection. Generic version costs $3. What a mystery!",
 				timing: "start",
 				effects: [
 					{ indexName: "Health and Science", priceChange: -2 }
@@ -298,7 +309,7 @@ class EventData {
 			},
 			{
 				name: "Venture Capital Surge",
-				description: "Record VC investment in startups. Valuation methodology evolving.",
+				description: "VCs invest billions in startups with no revenue, no profit, but AMAZING slides. It's like 1999 all over again!",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: 2 },

@@ -5,8 +5,9 @@ import Game from "./Game";
 const GamePage = ({ socket, name, room, setLoggedIn }) => {
   const [start, setStart] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
+  const [playerNames, setPlayerNames] = useState([]); // Add this state
   const [updates, setUpdates] = useState([]);
-  const [roundNumber, setRoundNumber] = useState(1); // Add state for round number
+  const [roundNumber, setRoundNumber] = useState(1);
 
   // FIX: useEffect (was useState) to attach socket listeners for player count and start
   useEffect(() => {
@@ -16,12 +17,16 @@ const GamePage = ({ socket, name, room, setLoggedIn }) => {
     sc.on("player_count", (count) => {
       setPlayerCount(count);
     });
+    sc.on("player_names", (names) => {  // Add this listener
+      setPlayerNames(names);
+    });
     sc.on("start_game", () => {
       setStart(true);
     });
 
     return () => {
       sc.off("player_count");
+      sc.off("player_names");  // Clean up
       sc.off("start_game");
     };
   }, [socket]);
@@ -103,15 +108,15 @@ const GamePage = ({ socket, name, room, setLoggedIn }) => {
                   </div>
                 ) : (
                   <div className="players-grid">
-                    {Array.from({ length: playerCount }).map((_, index) => (
-                      <div key={index} className="player-avatar">
-                        <div className="avatar-circle">
-                          <span className="avatar-icon">🎮</span>
-                        </div>
-                        <span className="avatar-label">Player {index + 1}</span>
+                  {playerNames.map((playerName, index) => (
+                    <div key={index} className="player-avatar">
+                      <div className="avatar-circle">
+                        <span className="avatar-icon">🎮</span>
                       </div>
-                    ))}
-                  </div>
+                      <span className="avatar-label">{playerName}</span>
+                    </div>
+                  ))}
+                </div>
                 )}
                 
                 {playerCount < 2 && (

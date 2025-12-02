@@ -123,19 +123,10 @@ const MessageOverlay = ({
               </button>
               
               {/* Message content */}
-              <div style={{ width: '100%' }}>
+              <div style={{ width: '100%', fontSize: '1.2rem' }}>
                 {formatMessage(snackbar.message)}
               </div>
               
-              {/* Help text */}
-              <div style={{ 
-                fontSize: '0.75rem', 
-                opacity: 0.6, 
-                textAlign: 'center',
-                marginTop: '4px'
-              }}>
-                Click anywhere or press Esc to dismiss
-              </div>
             </div>
           </div>
         ))}

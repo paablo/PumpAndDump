@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 
 import Card from "./CardModel";
-import Shares from "./Shares";
 import PlayerHand from "./PlayerHand";
 import GameHeader from "./GameHeader";
-import ActiveEvents from "./ActiveEvents";
 import MessageOverlay from "./MessageOverlay";
+import IndexCardView from "./IndexCardView";
+import StockCardView from "./StockCardView";
+import EventsAndIndexes from "./EventsAndIndexes";
 
 const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
   const [updates, setUpdates] = useState([]);
@@ -256,6 +257,19 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
     };
   }, [socket.current]);
 
+  useEffect(() => {
+    if (myTurn && actionsRemaining === 0) {
+      // Add a small delay to let the UI update before ending turn
+      const timer = setTimeout(() => {
+        console.log("All actions used - automatically ending turn");
+        setMyTurn(false);
+        socket.current.emit("turn_over", { room });
+      }, 500); // 500ms delay for smooth UX
+      
+      return () => clearTimeout(timer);
+    }
+  }, [actionsRemaining, myTurn, room, socket]);
+
   const endTurnHandler = () => {
     if (!myTurn) {
       showMessage("It's not your turn!");
@@ -295,6 +309,57 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
 
   return (
     <div className="game">
+
+  
+    <EventsAndIndexes 
+        activeEvents={activeEvents}
+        indexes={indexes}
+        styleCardSize={styleCardSize}
+        visualEffects={visualEffects}
+      />
+  
+      {/* Stock cards below */}
+      <div className="shares" style={emptyStyles.shares}>
+        <div className="playerCards" style={{ ...emptyStyles.cards, marginTop: 8 }}>
+          {stocks.length === 0 ? (
+            <div style={{ color: "#666", width: "100%", textAlign: "center" }}>No stocks shown</div>
+          ) : (
+            stocks.map((s, idx) => {
+              const ownedStock = (playerPortfolios[name] || []).find(owned => owned.name === s.name);
+              const canBuy = myTurn && actionsRemaining > 0;
+              const canSellThis = myTurn && actionsRemaining > 0 && ownedStock;
+              
+              return (
+                <StockCardView 
+                  key={idx} 
+                  stock={s} 
+                  indexes={indexes} 
+                  styleCardSize={styleCardSize}
+                  onPurchase={handlePurchaseStock}
+                  onSell={handleSellStock}
+                  canPurchase={canBuy}
+                  canSell={canSellThis}
+                  ownedStock={ownedStock}
+                  stockOwnershipCounts={stockOwnershipCounts}
+                />
+              );
+            })
+          )}
+        </div>
+      </div>
+  
+      <PlayerHand
+        playerCards={playerCards}
+        styleCardSize={styleCardSize}
+        styles={emptyStyles}
+      />
+  
+      <MessageOverlay
+        snackbars={snackbars}
+        handleSnackbarClose={handleSnackbarClose}
+      />
+
+      {/* Game Header */}
       <GameHeader
         roundNumber={roundNumber}
         players={players}
@@ -311,39 +376,10 @@ const Game = ({ socket, name, room, setLoggedIn, roundNumber }) => {
         onSellStock={handleSellStock}
         stockOwnershipCounts={stockOwnershipCounts}
         indexes={indexes}
+        myTurn={myTurn}              // Add this
+        endTurnHandler={endTurnHandler}  // Add this
+        endGame={endGame}            // Add this
       />
-
-      <ActiveEvents activeEvents={activeEvents} />
-
-      <Shares
-        styleCardSize={styleCardSize}
-        styles={emptyStyles}
-        stocks={stocks}
-        indexes={indexes}
-        activeEvents={activeEvents}
-        visualEffects={visualEffects}
-        onPurchaseStock={handlePurchaseStock}
-        onSellStock={handleSellStock}
-        myTurn={myTurn}
-        actionsRemaining={actionsRemaining}
-        stockOwnershipCounts={stockOwnershipCounts}
-        ownedStocks={playerPortfolios[name] || []}
-      />
-
-      <PlayerHand
-        playerCards={playerCards}
-        myTurn={myTurn}
-        endTurnHandler={endTurnHandler}
-        endGame={endGame}
-        styleCardSize={styleCardSize}
-        styles={emptyStyles}
-        nextButtonRef={nextButton}
-      />
-
-    <MessageOverlay
-      snackbars={snackbars}
-      handleSnackbarClose={handleSnackbarClose}
-    />
     </div>
   );
 };
