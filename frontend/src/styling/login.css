@@ -1,0 +1,213 @@
+/* ===== LOGIN PAGE ===== */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-container {
+  display: flex;
+  gap: 30px;
+  max-width: 1200px;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.login-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 240, 240, 0.95));
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  min-width: 400px;
+  max-width: 450px;
+  flex: 1;
+  animation: slideInUp 0.6s ease-out;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.logo-icon {
+  font-size: 3.5rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+.logo-text {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #666;
+  margin: 0;
+  font-weight: 500;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-textfield {
+  margin: 0 !important;
+}
+
+/* MUI TextField Customization */
+.login-textfield .MuiOutlinedInput-root {
+  border-radius: 10px;
+}
+
+.login-textfield .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: #667eea;
+}
+
+.login-textfield .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #764ba2;
+  border-width: 2px;
+}
+
+.login-textfield .MuiInputLabel-root.Mui-focused {
+  color: #764ba2;
+}
+
+.join-button {
+  margin-top: 10px !important;
+  padding: 14px !important;
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+  text-transform: none !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  transition: all 0.3s ease !important;
+}
+
+.join-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4) !important;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.login-footer p {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Rules Card */
+.rules-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 240, 240, 0.95));
+  border-radius: 20px;
+  padding: 35px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  max-width: 550px;
+  flex: 1;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: slideInUp 0.6s ease-out 0.1s backwards;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.rules-header {
+  text-align: center;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.rules-header h2 {
+  font-size: 2rem;
+  margin: 0;
+  color: #333;
+}
+
+.rules-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.rule-section {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
+  padding: 20px;
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.rule-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 1.3rem;
+  color: #4c0bae;
+}
+
+.rule-section p {
+  margin: 0;
+  color: #555;
+  line-height: 1.6;
+}
+
+.rules-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #555;
+  line-height: 1.8;
+}
+
+.rules-list li {
+  margin-bottom: 8px;
+}
+
+.rules-list strong {
+  color: #4c0bae;
+  font-weight: 600;
+}
+
+/* Custom Scrollbar for Rules Card */
+.rules-card::-webkit-scrollbar {
+  width: 8px;
+}
+
+.rules-card::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.rules-card::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+}
+
+.rules-card::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+

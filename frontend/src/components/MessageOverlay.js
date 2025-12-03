@@ -70,7 +70,7 @@ const MessageOverlay = ({
         alignItems: 'center',
         gap: '16px'
       }}>
-      {[...snackbars].reverse().map((snackbar, index) => (
+      {[...snackbars].map((snackbar, index) => (
           <div
             key={snackbar.id}
             style={{

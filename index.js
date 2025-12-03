@@ -55,11 +55,28 @@ io.on("connection", (socket) => {
 				io.sockets.adapter.rooms.get(room).size
 			);
 			io.in(room).emit("player_names", rooms[room].names); // Add this line
+			io.in(room).emit("player_colors", rooms[room].getPlayerColors());
+			io.in(room).emit("player_emojis", rooms[room].getPlayerEmojis());
 			io.in(room).emit("update", `${name} has joined room ${room}`);
 			io.in(room).emit("cash_update", rooms[room].playerCash);
 			console.log(`${name} joined room ${room}`);
 		} catch (err) {
 			console.log(err.message);
+		}
+	});
+
+	socket.on("get_room_state", ({ room }) => {
+		try {
+			const r = rooms[room];
+			if (r) {
+				const roomSet = io.sockets.adapter.rooms.get(room);
+				socket.emit("player_count", roomSet ? roomSet.size : 0);
+				socket.emit("player_names", r.names);
+				socket.emit("player_colors", r.getPlayerColors());
+				socket.emit("player_emojis", r.getPlayerEmojis());
+			}
+		} catch (error) {
+			console.log(error.message);
 		}
 	});
 
@@ -79,6 +96,8 @@ io.on("connection", (socket) => {
 				);
 				io.in(room).emit("player_names", r.names); // Add this line
 				r.removePlayer(name);
+				io.in(room).emit("player_colors", r.getPlayerColors());
+				io.in(room).emit("player_emojis", r.getPlayerEmojis());
 				io.in(room).emit("cash_update", r.playerCash);
 				console.log(`${name} has left ${room}`);
 			}
@@ -159,6 +178,7 @@ io.on("connection", (socket) => {
 				});
 				io.in(room).emit("game_log_update", r.logger.getRecentLog(10));
 				io.in(room).emit("stock_ownership_update", r.getStockOwnershipCounts());
+				io.in(room).emit("stock_ownership_by_player_update", r.getAllStockOwnershipByPlayer());
 				io.in(room).emit("actions_update", {
 					playerName: playerName,
 					actionsRemaining: result.actionsRemaining
@@ -199,6 +219,7 @@ io.on("connection", (socket) => {
 				});
 				io.in(room).emit("game_log_update", r.logger.getRecentLog(10));
 				io.in(room).emit("stock_ownership_update", r.getStockOwnershipCounts());
+				io.in(room).emit("stock_ownership_by_player_update", r.getAllStockOwnershipByPlayer());
 				io.in(room).emit("actions_update", {
 					playerName: playerName,
 					actionsRemaining: result.actionsRemaining
@@ -210,6 +231,124 @@ io.on("connection", (socket) => {
 			socket.emit("sell_result", { 
 				success: false, 
 				message: "Sale failed: " + error.message 
+			});
+		}
+	});
+
+	socket.on("play_action_card", ({ room, playerName, cardId, target, direction }) => {
+		try {
+			const r = rooms[room];
+			if (!r) {
+				socket.emit("action_result", { 
+					success: false, 
+					message: "Room not found" 
+				});
+				return;
+			}
+
+			// Execute the action card
+			const result = r.playActionCard(playerName, cardId, target, direction);
+			
+			// Send result to requesting player
+			socket.emit("action_result", result);
+
+			// If successful, broadcast relevant updates
+			if (result.success) {
+				// Update action cards for the player (serialize them)
+				const playerActionCards = r.playerManager.getPlayerActionCards(playerName);
+				socket.emit("action_cards_update", {
+					playerName: playerName,
+					actionCards: playerActionCards.map(card => card.toJSON ? card.toJSON() : card)
+				});
+				
+				// Update actions remaining
+				const actionsRemaining = r.playerManager.playerActionsRemaining[playerName];
+				io.in(room).emit("actions_update", {
+					playerName: playerName,
+					actionsRemaining: actionsRemaining
+				});
+				
+				// If action was applied to a stock, broadcast stocks update to show applied action cards
+				if (result.data && result.data.stockName) {
+					const stocks = r.tradingManager.getBoardStocks();
+					console.log('[index.js] Broadcasting stocks_update. Sample stock with appliedActionCards:', 
+						stocks.find(s => s.appliedActionCards && s.appliedActionCards.length > 0));
+					
+					io.in(room).emit("stocks_update", {
+						stocks: stocks,
+						indexes: r.indexes,
+						activeEvents: r.eventManager.getActiveEventsJSON(),
+						visualEffects: r.eventManager.getVisualEffects(),
+						gameLog: r.logger.getRecentLog(10),
+						stockOwnershipCounts: r.getStockOwnershipCounts(),
+						stockOwnershipByPlayer: r.getAllStockOwnershipByPlayer()
+					});
+				}
+				
+				// If this was insider trading, broadcast cash and portfolio updates
+				if (result.stock) {
+					io.in(room).emit("cash_update", r.playerCash);
+					io.in(room).emit("portfolio_update", {
+						playerName: playerName,
+						ownedStocks: r.playerManager.getPlayerPortfolio(playerName)
+					});
+					io.in(room).emit("stock_ownership_update", r.getStockOwnershipCounts());
+					io.in(room).emit("stock_ownership_by_player_update", r.getAllStockOwnershipByPlayer());
+					io.in(room).emit("net_worth_update", r.getAllPlayerNetWorths());
+				}
+				
+				// Always broadcast game log
+				io.in(room).emit("game_log_update", r.logger.getRecentLog(10));
+			}
+		} catch (error) {
+			console.log(error.message);
+			socket.emit("action_result", { 
+				success: false, 
+				message: "Action failed: " + error.message 
+			});
+		}
+	});
+
+	socket.on("draw_action_card", ({ room, playerName }) => {
+		try {
+			const r = rooms[room];
+			if (!r) {
+				socket.emit("draw_action_result", { 
+					success: false, 
+					message: "Room not found" 
+				});
+				return;
+			}
+
+			// Draw an action card
+			const result = r.drawActionCard(playerName);
+			
+			// Send result to requesting player
+			socket.emit("draw_action_result", result);
+
+			// If successful, broadcast updates
+			if (result.success) {
+				// Update action cards for the player
+				const playerActionCards = r.playerManager.getPlayerActionCards(playerName);
+				socket.emit("action_cards_update", {
+					playerName: playerName,
+					actionCards: playerActionCards.map(card => card.toJSON ? card.toJSON() : card)
+				});
+				
+				// Update actions remaining
+				io.in(room).emit("actions_update", {
+					playerName: playerName,
+					actionsRemaining: result.actionsRemaining
+				});
+				
+				// Broadcast game log
+				io.in(room).emit("game_log_update", r.logger.getRecentLog(10));
+			}
+		} catch (error) {
+			console.log(error.message);
+			socket.emit("draw_action_result", { 
+				success: false, 
+				message: "Draw failed: " + error.message 
 			});
 		}
 	});
@@ -235,6 +374,8 @@ io.on("connection", (socket) => {
 				);
 				io.in(socket.room).emit("player_names", r.names); // Add this line
 				r.removePlayer(socket.nickname);
+				io.in(socket.room).emit("player_colors", r.getPlayerColors());
+				io.in(socket.room).emit("player_emojis", r.getPlayerEmojis());
 				io.in(socket.room).emit("cash_update", r.playerCash);
 				io.emit("update", `${socket.nickname} has left`);
 			}

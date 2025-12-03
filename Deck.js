@@ -15,8 +15,9 @@ class Deck {
 
   shuffle() {
     let numberOfCards = this.deck.length;
-    for (var i = 0; i < numberOfCards; i++) {
-      let j = Math.floor(Math.random() * numberOfCards);
+    // Fisher-Yates shuffle - iterate backwards
+    for (let i = numberOfCards - 1; i > 0; i--) {
+      let j = Math.floor(Math.random() * (i + 1));  // ✅ Random from 0 to i
       let tmp = this.deck[i];
       this.deck[i] = this.deck[j];
       this.deck[j] = tmp;

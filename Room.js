@@ -3,6 +3,7 @@ const PlayingCard = require("./PlayingCard");
 const IndexCard = require("./IndexCard");
 const EventManager = require("./EventManager");
 const StockManager = require("./StockManager");
+const ActionManager = require("./ActionManager");
 const GameLogger = require("./GameLogger");
 const PlayerManager = require("./PlayerManager");
 const TradingManager = require("./TradingManager");
@@ -16,11 +17,16 @@ class Room {
 		this.deck = null;
 		this.indexes = [];
 		
+		// Game configuration constants
+		this.maxActionsPerTurn = 3; // Number of actions each player gets per turn
+		this.maxRounds = 6; // Maximum number of rounds in the game
+		
 		// Initialize manager classes
 		this.logger = new GameLogger();
 		this.playerManager = new PlayerManager();
 		this.eventManager = new EventManager();
 		this.stockManager = new StockManager();
+		this.actionManager = new ActionManager();
 		this.tradingManager = new TradingManager(this.playerManager, this.logger);
 		this.scoreManager = new ScoreManager(this.playerManager, this.tradingManager, this.logger);
 		this.roundManager = new RoundManager(
@@ -67,6 +73,17 @@ class Room {
 		// Initialize decks
 		this.stockManager.initialize();
 		this.eventManager.initialize();
+		this.actionManager.initialize();
+	
+		// Deal initial action cards to each player (2 cards each)
+		this.names.forEach(playerName => {
+			const initialActions = this.actionManager.drawMultipleCards(2);
+			console.log(`Dealing ${initialActions.length} action cards to ${playerName}`);
+			initialActions.forEach(card => {
+				console.log(`  - Card: ${card.name} (${card.actionType})`);
+				this.playerManager.addActionCard(playerName, card);
+			});
+		});
 	
 		// Generate indexes
 		this.indexes = IndexCard.createIndexes();
@@ -89,6 +106,10 @@ class Room {
 	
 		// Send initial state to all players
 		for (const playerSocketId of roomSet) {
+			const socket = io.sockets.sockets.get(playerSocketId);
+			const playerName = socket.nickname;
+			const playerActionCards = this.playerManager.getPlayerActionCards(playerName);
+			console.log(`Sending ${playerActionCards.length} action cards to ${playerName}`);
 			io.to(playerSocketId).emit("start_variables", {
 				cards: [],
 				playerNames: this.names,
@@ -98,12 +119,13 @@ class Room {
 				activeEvents: this.eventManager.getActiveEventsJSON(),
 				visualEffects: this.eventManager.getVisualEffects(),
 				gameLog: this.logger.gameLog,
-				stockOwnershipCounts: this.playerManager.getStockOwnershipCounts()
+				stockOwnershipCounts: this.playerManager.getStockOwnershipCounts(),
+				stockOwnershipByPlayer: this.getAllStockOwnershipByPlayer(),
+				playerColors: this.getPlayerColors(),
+				playerEmojis: this.getPlayerEmojis(),
+				maxActionsPerTurn: this.maxActionsPerTurn,
+				actionCards: playerActionCards.map(card => card.toJSON ? card.toJSON() : card)
 			});
-			const socket = io.sockets.sockets.get(playerSocketId);
-			const msg = "Welcome to Pump and Dump " + socket.nickname + "! \r\n Finish the game with the highest net worth to win!";
-			console.log(msg)
-			this.broadcastMessage(io.to(playerSocketId), msg);
 		}
 		
 		// Emit stocks_update to ensure frontend recalculates prices with modified indexes
@@ -113,7 +135,8 @@ class Room {
 			activeEvents: this.eventManager.getActiveEventsJSON(),
 			visualEffects: this.eventManager.getVisualEffects(),
 			gameLog: this.logger.getRecentLog(10),
-			stockOwnershipCounts: this.playerManager.getStockOwnershipCounts()
+			stockOwnershipCounts: this.playerManager.getStockOwnershipCounts(),
+			stockOwnershipByPlayer: this.getAllStockOwnershipByPlayer()
 		});
 	
 		io.in(this.name).emit("cash_update", this.playerCash);
@@ -123,7 +146,14 @@ class Room {
 		console.log(`Players: ${this.names}`);
 		const currentPlayerName = this.names[0];
 		console.log(`Current player name: ${currentPlayerName}`);
+		
+		// Reset actions for first player
+		this.playerManager.resetPlayerActions(currentPlayerName, this.maxActionsPerTurn);
 		io.in(this.name).emit("your_turn", currentPlayerName);
+		io.in(this.name).emit("actions_update", {
+			playerName: currentPlayerName,
+			actionsRemaining: this.maxActionsPerTurn
+		});
 	
 		console.log(`Game started in room: ${this.name}`);
 	}
@@ -141,7 +171,8 @@ class Room {
 			this.indexes, 
 			this.stockManager,
 			this.scoreManager,
-			6 // max rounds
+			this.maxRounds,
+			this.maxActionsPerTurn
 		);
 	
 		if (!result) return;
@@ -175,8 +206,129 @@ class Room {
 		return this.playerManager.getStockOwnershipCounts();
 	}
 
+	getAllStockOwnershipByPlayer() {
+		return this.playerManager.getAllStockOwnershipByPlayer();
+	}
+
+	getPlayerColors() {
+		return this.playerManager.getAllPlayerColors();
+	}
+
+	getPlayerEmojis() {
+		return this.playerManager.getAllPlayerEmojis();
+	}
+
 	getAllPlayerNetWorths() {
 		return this.scoreManager.getAllNetWorths(this.indexes);
+	}
+
+	/**
+	 * Play an action card
+	 * Extensible design: ActionCard.execute() handles all action types
+	 */
+	playActionCard(playerName, cardId, target = null, direction = null) {
+		// Validate player has actions remaining
+		if (!this.playerManager.hasActionsRemaining(playerName)) {
+			return { success: false, message: "No actions left this turn" };
+		}
+
+		// Get the action card from player's hand
+		const actionCard = this.playerManager.getActionCardById(playerName, cardId);
+		
+		if (!actionCard) {
+			return { success: false, message: "Action card not found in your hand" };
+		}
+
+		// Build context for action execution
+		const context = {
+			playerName,
+			eventManager: this.eventManager,
+			tradingManager: this.tradingManager,
+			indexes: this.indexes,
+			roundNumber: this.roundNumber,
+			stock: target,
+			direction: direction
+		};
+
+		// Execute the action (delegated to ActionCard class)
+		const result = this.actionManager.executeAction(actionCard, context);
+		
+		if (result.success) {
+			// Remove card from player's hand
+			this.playerManager.removeActionCard(playerName, cardId);
+			// Consume an action
+			this.playerManager.consumeAction(playerName);
+			// Log the action
+			this.logger.addToGameLog(`🎴 ${playerName} played ${actionCard.name}`);
+			
+			// If action was applied to a stock, track it
+			console.log('[Room.playActionCard] Checking if should track:', { 
+				hasTarget: !!target, 
+				hasResultData: !!result.data, 
+				hasStockName: !!(result.data && result.data.stockName),
+				targetName: target ? target.name : null,
+				resultData: result.data
+			});
+			
+			if (target && result.data && result.data.stockName) {
+				console.log('[Room.playActionCard] Tracking action card on stock:', target.name);
+				this.tradingManager.addAppliedActionCard(target.name, {
+					name: actionCard.name,
+					actionType: actionCard.actionType,
+					effectValue: actionCard.effectValue,
+					playerName: playerName
+				});
+			} else {
+				console.log('[Room.playActionCard] NOT tracking - conditions not met');
+			}
+		}
+		
+		return result;
+	}
+
+	/**
+	 * Draw a new action card for a player
+	 * Costs one action
+	 */
+	drawActionCard(playerName) {
+		// Validate player has actions remaining
+		if (!this.playerManager.hasActionsRemaining(playerName)) {
+			return { success: false, message: "No actions left this turn" };
+		}
+
+		// Check if player's hand is full (max 4 cards)
+		const currentCards = this.playerManager.getActionCardCount(playerName);
+		if (currentCards >= 4) {
+			return { success: false, message: "Your hand is full! You can only hold 4 action cards." };
+		}
+
+		// Check if action deck has cards
+		if (this.actionManager.isActionDeckEmpty()) {
+			return { success: false, message: "No action cards left in deck" };
+		}
+
+		// Draw a card
+		const newCard = this.actionManager.drawActionCard();
+		
+		if (!newCard) {
+			return { success: false, message: "Failed to draw action card" };
+		}
+
+		// Add to player's hand
+		this.playerManager.addActionCard(playerName, newCard);
+		
+		// Consume an action
+		this.playerManager.consumeAction(playerName);
+		
+		// Log the action
+		this.logger.addToGameLog(`🃏 ${playerName} drew an action card`);
+
+		return {
+			success: true,
+			message: `Drew ${newCard.name}`,
+			card: newCard.toJSON(),
+			actionsRemaining: this.playerManager.playerActionsRemaining[playerName]
+		};
 	}
 
 	_endGame(io) {

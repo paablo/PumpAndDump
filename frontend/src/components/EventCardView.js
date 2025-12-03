@@ -3,8 +3,8 @@ import React from "react";
 const EventCardView = ({ event, styleCardSize }) => {
   // Event cards should be slightly larger than index cards
   const eventCardSize = {
-    width: "220px",
-    height: "300px"
+    width: "260px",
+    height: "350px"
   };
 
   // Calculate initial effects text

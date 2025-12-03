@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import "./App.css";
+import "./styling/index.css";
 import io from "socket.io-client";
 //import GithubCorner from "react-github-corner";
 
@@ -7,8 +7,8 @@ import io from "socket.io-client";
 import LoginPage from "./components/LoginPage";
 import GamePage from "./components/GamePage";
 
-// const CONNECTION = 'localhost:4000';
-const CONNECTION = "/";
+// Server URL from environment variable, with fallback
+const CONNECTION = process.env.REACT_APP_SERVER_URL || "/";
 
 const App = () => {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -27,7 +27,7 @@ const App = () => {
   useEffect(() => {
     const isDev = process.env.NODE_ENV === 'development';
     
-    if (isDev && socket.current && !loggedIn) {
+    if (isDev && socket.current && !loggedIn && false) {
       // Generate random name
       const adjectives = ['Swift', 'Bold', 'Clever', 'Mighty', 'Lucky', 'Brave', 'Wise', 'Quick', 'Cool', 'Sharp'];
       const nouns = ['Tiger', 'Eagle', 'Lion', 'Wolf', 'Bear', 'Fox', 'Hawk', 'Dragon', 'Phoenix', 'Panther'];

@@ -58,7 +58,7 @@ class RoundManager {
 	 * Main entry point for processing a turn
 	 * Returns { gameEnded: boolean, currentPlayer: string }
 	 */
-	processRoundCycle(io, roomName, indexes, stockManager, scoreManager, maxRounds = 12) {
+	processRoundCycle(io, roomName, indexes, stockManager, scoreManager, maxRounds = 12, actionsPerTurn = 2) {
 		const roomSet = io.sockets.adapter.rooms.get(roomName);
 		if (!roomSet) return null;
 
@@ -68,7 +68,7 @@ class RoundManager {
 		}
 		
 		// Advance to next player's turn
-		const turnResult = this.advanceTurn(io, roomName);
+		const turnResult = this.advanceTurn(io, roomName, actionsPerTurn);
 		if (!turnResult) return null;
 
 		// Update net worths after turn change
@@ -86,7 +86,7 @@ class RoundManager {
 	/**
 	 * Advance to next player's turn
 	 */
-	advanceTurn(io, roomName) {
+	advanceTurn(io, roomName, actionsPerTurn = 2) {
 		const roomSet = io.sockets.adapter.rooms.get(roomName);
 		if (!roomSet) return null;
 
@@ -101,22 +101,45 @@ class RoundManager {
 		const currentPlayerName = this._getCurrentPlayerName();
 		console.log(`It's ${currentPlayerName}'s turn, ${this.currentTurn} of ${roomSize}`);
 
-		this._resetPlayerForTurn(currentPlayerName);
-		this._emitTurnUpdates(io, roomName, currentPlayerName);
+		this._resetPlayerForTurn(currentPlayerName, actionsPerTurn);
+		this._emitTurnUpdates(io, roomName, currentPlayerName, actionsPerTurn);
 
 		return { endOfRound, currentPlayer: currentPlayerName };
+	}
+
+	/**
+	 * Send dividend message (if dividends were paid)
+	 */
+	sendDividendMessage(io, roomName, indexes, dividendPayments) {
+		if (!dividendPayments || dividendPayments.length === 0) {
+			return;
+		}
+
+		// Get player cash data to show in dividend summary
+		const playerCash = this.playerManager.getAllCash();
+		const dividendMessage = this.logger.buildDividendSummary(dividendPayments, playerCash);
+
+		io.in(roomName).emit("round_message", {
+			round: this.roundNumber,
+			message: dividendMessage,
+			indexes: indexes,
+			activeEvents: this.eventManager.getActiveEventsJSON(),
+			recentLog: this.logger.getRecentLog(5)
+		});
 	}
 
 	/**
 	 * Send round summary message
 	 */
 	sendRoundSummary(io, roomName, indexes, newEvent, endRoundRolls, dividendPayments) {
+		// Build round summary WITHOUT dividends (they're sent separately)
 		const summaryMessage = this.logger.buildRoundSummary(
 			this.roundNumber,
 			newEvent,
 			endRoundRolls,
 			this.eventManager.activeEvents,
-			dividendPayments
+			[], // Empty dividends array - dividends sent separately
+			{}  // Empty playerCash - not needed for round summary
 		);
 
 		io.in(roomName).emit("round_message", {
@@ -147,15 +170,15 @@ class RoundManager {
 		return this.playerManager.getPlayers()[this.currentTurn];
 	}
 
-	_resetPlayerForTurn(playerName) {
-		this.playerManager.resetPlayerActions(playerName, 2);
+	_resetPlayerForTurn(playerName, actionsPerTurn) {
+		this.playerManager.resetPlayerActions(playerName, actionsPerTurn);
 	}
 
-	_emitTurnUpdates(io, roomName, playerName) {
+	_emitTurnUpdates(io, roomName, playerName, actionsPerTurn) {
 		io.in(roomName).emit("your_turn", playerName);
 		io.in(roomName).emit("actions_update", {
 			playerName: playerName,
-			actionsRemaining: 2
+			actionsRemaining: actionsPerTurn
 		});
 	}
 
@@ -329,21 +352,39 @@ _handleEndOfRound(io, roomName, indexes, stockManager, scoreManager, maxRounds, 
 	_broadcastRoundTransitionUpdates(io, roomName, indexes, scoreManager, endRoundResult, startRoundResult) {
 		// Broadcast stock updates
 		this._broadcastStockUpdates(io, roomName, indexes);
-	
+		
 		// Broadcast cash updates if dividends were paid
 		if (endRoundResult.dividendPayments?.length > 0) {
 			this._broadcastCashUpdates(io, roomName, indexes, scoreManager);
 		}
-	
-		// Send round summary
-		this.sendRoundSummary(
-			io, 
-			roomName, 
-			indexes, 
-			startRoundResult.newEvent,  // Event for the NEW round
-			endRoundResult.endRoundRolls,  // Bubble pops from old round
-			endRoundResult.dividendPayments  // Dividends from old round
-		);
+		
+		// Send dividend message FIRST (if dividends were paid)
+		// Use setTimeout to ensure it's sent before the round message
+		if (endRoundResult.dividendPayments?.length > 0) {
+			this.sendDividendMessage(io, roomName, indexes, endRoundResult.dividendPayments);
+			
+			// Send round summary AFTER a short delay to ensure dividend message shows first
+			setTimeout(() => {
+				this.sendRoundSummary(
+					io, 
+					roomName, 
+					indexes, 
+					startRoundResult.newEvent,  // Event for the NEW round
+					endRoundResult.endRoundRolls,  // Bubble pops from old round
+					endRoundResult.dividendPayments  // Passed but not included in message (sent separately)
+				);
+			}, 100); // 100ms delay
+		} else {
+			// No dividends - send round summary immediately
+			this.sendRoundSummary(
+				io, 
+				roomName, 
+				indexes, 
+				startRoundResult.newEvent,
+				endRoundResult.endRoundRolls,
+				endRoundResult.dividendPayments
+			);
+		}
 	}
 	
 	// ... rest of the broadcasting and logging methods stay the same ...
@@ -355,7 +396,8 @@ _handleEndOfRound(io, roomName, indexes, stockManager, scoreManager, maxRounds, 
 			activeEvents: this.eventManager.getActiveEventsJSON(),
 			visualEffects: this.eventManager.getVisualEffects(),
 			gameLog: this.logger.getRecentLog(10),
-			stockOwnershipCounts: this.playerManager.getStockOwnershipCounts()
+			stockOwnershipCounts: this.playerManager.getStockOwnershipCounts(),
+			stockOwnershipByPlayer: this.playerManager.getAllStockOwnershipByPlayer()
 		});
 	}
 

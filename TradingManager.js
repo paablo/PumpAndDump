@@ -24,6 +24,23 @@ class TradingManager {
 	}
 
 	/**
+	 * Add an applied action card to a stock (for visual display)
+	 */
+	addAppliedActionCard(stockName, actionCardInfo) {
+		const stock = this.currentBoardStocks.find(s => s.name === stockName);
+		console.log('[TradingManager] addAppliedActionCard:', { stockName, found: !!stock, actionCardInfo });
+		if (stock) {
+			if (!stock.appliedActionCards) {
+				stock.appliedActionCards = [];
+			}
+			stock.appliedActionCards.push(actionCardInfo);
+			console.log('[TradingManager] After adding:', stock.name, 'appliedActionCards:', stock.appliedActionCards);
+		} else {
+			console.error('[TradingManager] Stock not found:', stockName);
+		}
+	}
+
+	/**
 	 * Calculate market price for a stock
 	 */
 	calculateStockPrice(stock, indexes) {
@@ -106,6 +123,75 @@ class TradingManager {
 			playerCash: this.playerManager.getPlayerCash(playerName),
 			ownedStocks: this.playerManager.getPlayerPortfolio(playerName),
 			actionsRemaining: this.playerManager.playerActionsRemaining[playerName]
+		};
+	}
+
+	/**
+	 * Purchase a stock with a discount (used for Insider Trading action card)
+	 */
+	purchaseStockWithDiscount(playerName, stock, indexes, roundNumber, discount = 0) {
+		// Validate player exists
+		if (!this.playerManager.getPlayers().includes(playerName)) {
+			return { success: false, message: "Player not in game" };
+		}
+
+		// Note: Action consumption is handled by the action card system
+		// This method is called WITHIN an action card execution
+
+		// Check if player already bought this stock this turn
+		const existingAction = this.playerManager.getStockAction(playerName, stock.name);
+		if (existingAction === 'buy') {
+			return { success: false, message: "You cannot buy the same stock twice in one turn" };
+		}
+
+		// Check if player sold this stock this turn
+		if (existingAction === 'sell') {
+			return { success: false, message: "You cannot buy a stock you sold this turn" };
+		}
+
+		// Calculate price with discount
+		const basePrice = this.calculateStockPrice(stock, indexes);
+		const discountedPrice = Math.max(1, basePrice - discount);
+		
+		if (basePrice <= 0) {
+			return { success: false, message: "Invalid stock price" };
+		}
+
+		// Check if player has enough cash
+		const playerCash = this.playerManager.getPlayerCash(playerName);
+		if (playerCash < discountedPrice) {
+			return { 
+				success: false, 
+				message: `Insufficient funds. Need $${discountedPrice}, have $${playerCash}` 
+			};
+		}
+
+		// Execute purchase at discounted price
+		this.playerManager.subtractCash(playerName, discountedPrice);
+		this.playerManager.recordStockAction(playerName, stock.name, 'buy');
+
+		const stockName = stock.name || stock.companyName || 'Stock';
+		const purchasedStock = {
+			...stock,
+			purchasePrice: discountedPrice,
+			purchaseRound: roundNumber
+		};
+
+		this.playerManager.addStockToPortfolio(playerName, purchasedStock);
+		this.stocksPurchasedThisRound.add(stock.name);
+
+		// Log with discount information
+		this.logger.addToGameLog(
+			`🤫 ${playerName} used INSIDER TRADING to buy ${stockName} for $${discountedPrice} (saved $${discount})!`
+		);
+
+		return {
+			success: true,
+			message: `Purchased ${stockName} for $${discountedPrice} (saved $${discount})`,
+			stock: purchasedStock,
+			discount: discount,
+			playerCash: this.playerManager.getPlayerCash(playerName),
+			ownedStocks: this.playerManager.getPlayerPortfolio(playerName)
 		};
 	}
 

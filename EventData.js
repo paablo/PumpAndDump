@@ -27,7 +27,7 @@ class EventData {
 			},
 			{
 				name: "Crypto Mania",
-				description: "Everyone's cousin is now a blockchain expert. Your uncle bought $500 of DogeElonMoonCoin.",
+				description: "Everyone's cousin is now a blockchain expert. Your uncle bought $500 of meme coins.",
 				timing: "start",
 				effects: [
 					{ indexName: "finance", priceChange: 3 }
@@ -59,7 +59,7 @@ class EventData {
 			},
 			{
 				name: "Real Estate Frenzy",
-				description: "A toolshed in San Francisco just sold for $2.3M. Totally normal and sustainable!",
+				description: "A toolshed in a major city just sold for millions. Totally normal and sustainable!",
 				timing: "start",
 				effects: [
 					{ indexName: "industrial", priceChange: 3 }
@@ -75,7 +75,7 @@ class EventData {
 			},
 			{
 				name: "Red Scare",
-				description: "Economists suddenly remember that infinite growth on a finite planet is... problematic. Markets hate when math shows up uninvited.",
+				description: "Economists remember infinite growth on a finite planet is problematic. Markets hate math.",
 				timing: "start",
 				effects: [
 						{ indexName: "tech", priceChange: -2 },
@@ -157,20 +157,20 @@ class EventData {
 					{ indexName: "Health and Science", priceChange: 2 }
 				]
 			},
-			{
-				name: "Invisible Hand",
-				description: "Sometimes nobody knows that is going to happen next, but it happens anyway.",
-				timing: "start",
-				effects: [
-					{ indexName: "tech", priceChange: Math.random() * 4 - 2 },
-					{ indexName: "finance", priceChange: Math.random() * 4 - 2 },
-					{ indexName: "industrial", priceChange: Math.random() * 4 - 2 },
-					{ indexName: "Health and Science", priceChange: Math.random() * 4 - 2 }
-				]
-			},
+		{
+			name: "Invisible Hand",
+			description: "Sometimes nobody knows that is going to happen next, but it happens anyway.",
+			timing: "start",
+			effects: [
+				{ indexName: "tech", priceChange: Math.round(Math.random() * 4 - 2) },
+				{ indexName: "finance", priceChange: Math.round(Math.random() * 4 - 2) },
+				{ indexName: "industrial", priceChange: Math.round(Math.random() * 4 - 2) },
+				{ indexName: "Health and Science", priceChange: Math.round(Math.random() * 4 - 2) }
+			]
+		},
 			{
 				name: "Fintech Expansion",
-				description: "A new app promises to disrupt banking. It's Venmo with extra steps and VC funding.",
+				description: "A new app promises to disrupt banking. It's payment apps with extra steps and VC funding.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: 2 },
@@ -179,7 +179,7 @@ class EventData {
 			},
 			{
 				name: "Supply Chain Disruption",
-				description: "That boat stuck in the canal? Yeah, your iPhone is on it. So is everyone else's.",
+				description: "That boat stuck in the canal? Yeah, your electronics are on it. So is everyone else's.",
 				timing: "start",
 				effects: [
 					{ indexName: "industrial", priceChange: -3 }
@@ -187,7 +187,7 @@ class EventData {
 			},
 			{
 				name: "mRNA Breakthrough",
-				description: "Science does something amazing. Half of Twitter becomes vaccine experts overnight.",
+				description: "Science does something amazing. Half of social media becomes vaccine experts overnight.",
 				timing: "start",
 				effects: [
 					{ indexName: "Health and Science", priceChange: 3 }
@@ -195,7 +195,7 @@ class EventData {
 			},
 			{
 				name: "Machine Learning Advance",
-				description: "AI can now write code, make art, and take your job. But it still can't fold fitted sheets.",
+				description: "AI writes code, makes art, and takes jobs. Still can't fold fitted sheets.",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: 2 }
@@ -276,7 +276,7 @@ class EventData {
 			},
 			{
 				name: "Infrastructure Package",
-				description: "Congress agrees to fix bridges built in 1952. Only took 70 years of debate!",
+				description: "Government agrees to fix aging infrastructure. Only took decades of debate!",
 				timing: "start",
 				effects: [
 					{ indexName: "industrial", priceChange: 3 }
@@ -284,7 +284,7 @@ class EventData {
 			},
 			{
 				name: "Credit Downgrade",
-				description: "Rating agency downgrades country's credit. Same agency that rated junk bonds AAA in 2008.",
+				description: "Rating agency downgrades country's credit. Same agency that rated junk bonds AAA before.",
 				timing: "start",
 				effects: [
 					{ indexName: "finance", priceChange: -2 }
@@ -309,7 +309,7 @@ class EventData {
 			},
 			{
 				name: "Venture Capital Surge",
-				description: "VCs invest billions in startups with no revenue, no profit, but AMAZING slides. It's like 1999 all over again!",
+				description: "VCs invest billions in startups with no revenue but amazing slides. History repeats itself!",
 				timing: "start",
 				effects: [
 					{ indexName: "tech", priceChange: 2 },

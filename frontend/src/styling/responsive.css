@@ -1,0 +1,29 @@
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+  }
+  
+  .login-card,
+  .rules-card {
+    min-width: 100%;
+    max-width: 100%;
+  }
+  
+  .logo-text {
+    font-size: 2rem;
+  }
+  
+  .players-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
+  
+  .lobby-actions {
+    flex-direction: column;
+  }
+  
+  .events-and-indexes-combined {
+    flex-wrap: wrap;
+  }
+}
+

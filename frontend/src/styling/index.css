@@ -1,0 +1,14 @@
+/* ===== MAIN STYLES INDEX ===== */
+/* This file imports all styling modules */
+
+@import './base.css';
+@import './animations.css';
+@import './login.css';
+@import './lobby.css';
+@import './game.css';
+@import './cards.css';
+@import './game-log.css';
+@import './updates.css';
+@import './responsive.css';
+@import './legacy.css';
+

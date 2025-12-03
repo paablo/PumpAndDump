@@ -139,6 +139,32 @@ class EventManager {
 	}
 
 	/**
+	 * Peek at the next event without drawing it (for Market Forecast action card)
+	 * @returns {EventCard|null} The next event or null if deck is empty
+	 */
+	peekNextEvent() {
+		if (!this.eventDeck || this.eventDeck.isEmpty()) {
+			return null;
+		}
+		// Peek at the top card without removing it
+		// In Deck class, cards are drawn from the end, so peek at last element
+		const cards = this.eventDeck.cards;
+		return cards.length > 0 ? cards[cards.length - 1] : null;
+	}
+
+	/**
+	 * Shuffle the event deck (for Market Uncertainty action card)
+	 * @returns {boolean} True if shuffled successfully
+	 */
+	shuffleEventDeck() {
+		if (this.eventDeck) {
+			this.eventDeck.shuffle();
+			return true;
+		}
+		return false;
+	}
+
+	/**
 	 * Get all active events for serialization
 	 */
 	getActiveEventsJSON() {

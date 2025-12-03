@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, TextField } from '@material-ui/core';
+import GameRules from './GameRules';
 
 
 const LoginPage = ({ socket, setLoggedIn, name, setName, room, setRoom }) => {
@@ -20,8 +21,42 @@ const LoginPage = ({ socket, setLoggedIn, name, setName, room, setRoom }) => {
             alert('Please enter a room ID');
             return;
         }
+        
+        // Check if socket is connected
+        if (!socket.current || !socket.current.connected) {
+            alert('Not connected to server. Please wait and try again.');
+            return;
+        }
+        
+        // Only set loggedIn to true after server confirms join
+        // Listen for player_count or player_names as confirmation
+        let hasConfirmed = false;
+        const handleJoinConfirmation = () => {
+            if (!hasConfirmed) {
+                hasConfirmed = true;
+                setLoggedIn(true);
+                socket.current.off('player_count', handleJoinConfirmation);
+                socket.current.off('player_names', handleJoinConfirmation);
+            }
+        };
+        
+        // Set a timeout in case server doesn't respond
+        const timeout = setTimeout(() => {
+            if (!hasConfirmed) {
+                socket.current.off('player_count', handleJoinConfirmation);
+                socket.current.off('player_names', handleJoinConfirmation);
+                alert('Failed to join room. Please check your connection and try again.');
+            }
+        }, 5000);
+        
+        const handleConfirmationWithTimeout = () => {
+            clearTimeout(timeout);
+            handleJoinConfirmation();
+        };
+        
+        socket.current.once('player_count', handleConfirmationWithTimeout);
+        socket.current.once('player_names', handleConfirmationWithTimeout);
         socket.current.emit('join_room', { room, name });
-        setLoggedIn(true);
     };
 
     return (
@@ -76,44 +111,7 @@ const LoginPage = ({ socket, setLoggedIn, name, setName, room, setRoom }) => {
                 </div>
 
                 {/* How to Play Card */}
-                <div className="rules-card">
-                    <div className="rules-header">
-                        <h2>🎮 How to Play</h2>
-                    </div>
-                    
-                    <div className="rules-content">
-                        <div className="rule-section">
-                            <h3>🎯 Objective</h3>
-                            <p>Buy stocks low, manipulate the market with events, and sell high to become the wealthiest trader!</p>
-                        </div>
-
-                        <div className="rule-section">
-                            <h3>📊 Game Flow</h3>
-                            <ul className="rules-list">
-                                <li>Each round, players take turns making decisions</li>
-                                <li>Buy stocks from the available market offerings</li>
-                                <li>Watch as random events affect market indexes</li>
-                                <li>Stock prices are tied to their sector's index</li>
-                                <li>Sell your stocks when the price is right</li>
-                            </ul>
-                        </div>
-
-                        <div className="rule-section">
-                            <h3>💰 Market Mechanics</h3>
-                            <ul className="rules-list">
-                                <li><strong>Indexes:</strong> Track sector performance (Tech, Finance, Industrial, Health)</li>
-                                <li><strong>Events:</strong> Random occurrences that change index prices</li>
-                                <li><strong>Stocks:</strong> Each has dividends and growth rates</li>
-                                <li><strong>Price Formula:</strong> Stock cost = Base + (Index - 10)</li>
-                            </ul>
-                        </div>
-
-                        <div className="rule-section">
-                            <h3>🏆 Winning</h3>
-                            <p>The player with the most cash at the end of the game wins!</p>
-                        </div>
-                    </div>
-                </div>
+                <GameRules variant="card" />
             </div>
         </div>
     )

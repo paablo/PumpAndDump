@@ -1,0 +1,160 @@
+/* ===== GAME LOG STYLES ===== */
+
+/* Game Log Banner - Integrated into Header */
+.game-log-banner {
+  margin-top: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.6);
+  transition: all 0.3s ease;
+}
+
+.log-banner-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.log-banner-header:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+}
+
+.log-banner-header.clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.log-banner-header.clickable:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+}
+
+.log-banner-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.log-banner-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #4c0bae;
+  flex: 1;
+}
+
+.log-banner-preview {
+  font-size: 1.1rem;
+  color: #555;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collapse-icon {
+  font-size: 1rem;
+  color: #667eea;
+  transition: transform 0.3s ease;
+  font-weight: bold;
+}
+
+/* Legacy Game Log Section */
+.game-log-section {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 0;
+  margin: 16px auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-width: 1200px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.game-log-section.collapsible {
+  margin: 16px auto;
+}
+
+.log-header {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #4c0bae;
+  padding: 16px 20px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.log-item {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  padding: 10px 14px;
+  border-radius: 6px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border-left: 4px solid #667eea;
+  transition: background 0.2s;
+}
+
+.log-item:hover {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+}
+
+/* Market news styling (from backend) */
+.log-item.log-market {
+  border-left: 4px solid #667eea;
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+}
+
+.log-item.log-market:hover {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.25) 0%, rgba(118, 75, 162, 0.25) 100%);
+}
+
+/* Player action styling */
+.log-item.log-player {
+  border-left: 4px solid #34a853;
+  background: linear-gradient(90deg, rgba(52, 168, 83, 0.1) 0%, rgba(52, 168, 83, 0.08) 100%);
+}
+
+.log-item.log-player:hover {
+  background: linear-gradient(90deg, rgba(52, 168, 83, 0.2) 0%, rgba(52, 168, 83, 0.15) 100%);
+}
+
+.log-round {
+  background-color: #4c0bae;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.log-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.log-message {
+  flex: 1;
+  color: #333;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+

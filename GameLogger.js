@@ -36,15 +36,18 @@ class GameLogger {
 
 	/**
 	 * Build dividend summary section
+	 * @param {Array} dividendPayments - Array of dividend payment objects
+	 * @param {Object} playerCash - Object mapping player names to their cash amounts
 	 */
-	buildDividendSummary(dividendPayments = []) {
+	buildDividendSummary(dividendPayments = [], playerCash = {}) {
 		if (!dividendPayments || dividendPayments.length === 0) {
 			return '';
 		}
 		
 		let summary = `💰 Dividend Round (every even round)!:`;
 		dividendPayments.forEach(payment => {
-			summary += `\n  ${payment.playerName}: $${payment.totalDividends}`;
+			const newCash = playerCash[payment.playerName] || 0;
+			summary += `\n  ${payment.playerName}: $${payment.totalDividends} → $${newCash}`;
 			// Optionally show breakdown
 			if (payment.stockDividends.length > 0) {
 				const breakdown = payment.stockDividends.map(sd => 
@@ -161,11 +164,17 @@ class GameLogger {
 
 	/**
 	 * Build complete round summary message (combines all parts)
+	 * @param {number} roundNumber - The round number
+	 * @param {Object} newlyDrawnEvent - The newly drawn event
+	 * @param {Array} endRoundRolls - End of round roll results
+	 * @param {Array} activeEvents - Active events
+	 * @param {Array} dividendPayments - Dividend payments
+	 * @param {Object} playerCash - Object mapping player names to their cash amounts
 	 */
-	buildRoundSummary(roundNumber, newlyDrawnEvent, endRoundRolls, activeEvents, dividendPayments = []) {
+	buildRoundSummary(roundNumber, newlyDrawnEvent, endRoundRolls, activeEvents, dividendPayments = [], playerCash = {}) {
 		const parts = [
+			this.buildDividendSummary(dividendPayments, playerCash),
 			`🎲 Round ${roundNumber} begins!`,
-			this.buildDividendSummary(dividendPayments),
 			this.buildEndRoundRollsSummary(endRoundRolls),
 			//this.buildNewEventSummary(newlyDrawnEvent),
 			this.buildActiveEventsSummary(activeEvents)
